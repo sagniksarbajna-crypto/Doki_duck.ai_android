@@ -355,6 +355,26 @@
   .phone.incognito .send-btn{ background:#57508a; border-color:#8a84c9; color:#f0eefc; }
   .phone.incognito .send-btn:hover{ background:#453f70; }
 
+  /* STAGE B: lightweight top-level app navigation without changing Chat/Grammar internals */
+  .phone.route-nonchat #messages,
+  .phone.route-nonchat .meter,
+  .phone.route-nonchat #grammarStatus,
+  .phone.route-nonchat #geminiDiagnosticPanel,
+  .phone.route-nonchat #grammarLearningPanel,
+  .phone.route-nonchat .inputbar{display:none!important;}
+  .doki-route-panel{display:none;flex:1;min-height:0;overflow:auto;background:var(--cream);padding:18px 16px;}
+  .phone.route-nonchat .doki-route-panel{display:flex;align-items:center;justify-content:center;}
+  .phone.incognito .doki-route-panel{background:#232230;}
+  .doki-route-card{width:min(100%,560px);background:#fff;border:2px solid var(--ink);border-radius:20px;padding:22px 18px;box-shadow:0 10px 24px rgba(0,0,0,.08);text-align:center;}
+  .doki-route-icon{font-size:38px;line-height:1;margin-bottom:8px;}
+  .doki-route-title{font-family:'Baloo 2',sans-serif;font-size:1.45rem;font-weight:900;}
+  .doki-route-note{margin:6px auto 16px;max-width:430px;font-size:12px;line-height:1.5;opacity:.72;}
+  .doki-route-back{border:2px solid var(--ink);border-radius:12px;background:var(--olive);color:#fff;padding:10px 14px;font-weight:900;font-size:12px;cursor:pointer;}
+  .phone.incognito .doki-route-card{background:#2f2e3a;color:#eae7f5;border-color:#5b596a;}
+  .phone.incognito .doki-route-back{background:#57508a;border-color:#8a84c9;}
+  .doki-menu-divider{height:1px;background:#d1c9bb;margin:7px 10px;}
+  .phone.incognito .doki-menu-divider{background:#4d4a60;}
+
   ::-webkit-scrollbar{width:8px;}
   ::-webkit-scrollbar-thumb{background:#D9CDA9; border-radius:8px;}
   .phone.incognito ::-webkit-scrollbar-thumb{ background:#454358; }
@@ -618,6 +638,15 @@
     </div>
   </div>
 
+  <div class="doki-route-panel" id="dokiRoutePanel" aria-live="polite" aria-hidden="true">
+    <div class="doki-route-card">
+      <div class="doki-route-icon" id="dokiRouteIcon">📝</div>
+      <div class="doki-route-title" id="dokiRouteTitle">Grammar Check</div>
+      <div class="doki-route-note" id="dokiRouteNote">The dedicated grammar workspace will be connected in Stage C. Chat remains separate.</div>
+      <button class="doki-route-back" id="dokiRouteBack" type="button">← Back to Chat</button>
+    </div>
+  </div>
+
   <div class="messages" id="messages">
     <div class="system-note" id="systemNote">You are now chatting with Doki Duck AI. It has one skill.</div>
     <div class="row bot">
@@ -669,6 +698,10 @@
     <button class="doki-menu-item" id="menuProfileBtn" type="button"><span class="doki-menu-icon">👤</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">My Doki</span><span class="doki-menu-item-note">Profile, XP and pond progress</span></span><span class="doki-menu-arrow">›</span></button>
     <button class="doki-menu-item" id="menuTrophyBtn" type="button"><span class="doki-menu-icon">🏆</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Trophy Room</span><span class="doki-menu-item-note">Earned and locked Doki trophies</span></span><span class="doki-menu-arrow">›</span></button>
     <button class="doki-menu-item" id="menuLeaderboardBtn" type="button"><span class="doki-menu-icon">📊</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Pond Leaderboard</span><span class="doki-menu-item-note">See the shared XP rankings</span></span><span class="doki-menu-arrow">›</span></button>
+    <div class="doki-menu-divider" aria-hidden="true"></div>
+    <button class="doki-menu-item" id="menuChatBtn" type="button"><span class="doki-menu-icon">🦆</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Chat with Doki</span><span class="doki-menu-item-note">Normal AI conversation</span></span><span class="doki-menu-arrow">›</span></button>
+    <button class="doki-menu-item" id="menuGrammarBtn" type="button"><span class="doki-menu-icon">📝</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Grammar Check</span><span class="doki-menu-item-note">Dedicated grammar correction tool</span></span><span class="doki-menu-arrow">›</span></button>
+    <button class="doki-menu-item" id="menuAcademyBtn" type="button"><span class="doki-menu-icon">🎯</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Pond Academy</span><span class="doki-menu-item-note">Grammar learning and quiz hub</span></span><span class="doki-menu-arrow">›</span></button>
   </nav>
 </aside>
 
@@ -932,6 +965,9 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   const menuProfileBtn = document.getElementById('menuProfileBtn');
   const menuTrophyBtn = document.getElementById('menuTrophyBtn');
   const menuLeaderboardBtn = document.getElementById('menuLeaderboardBtn');
+  const menuChatBtn = document.getElementById('menuChatBtn');
+  const menuGrammarBtn = document.getElementById('menuGrammarBtn');
+  const menuAcademyBtn = document.getElementById('menuAcademyBtn');
   const dokiMenuProfileName = document.getElementById('dokiMenuProfileName');
   const dokiMenuProfileMeta = document.getElementById('dokiMenuProfileMeta');
 
@@ -989,6 +1025,11 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   window.dokiContext = { get: getDokiContext, clear: clearDokiContext };
 
   const phone = document.getElementById('phone');
+  const dokiRoutePanel = document.getElementById('dokiRoutePanel');
+  const dokiRouteIcon = document.getElementById('dokiRouteIcon');
+  const dokiRouteTitle = document.getElementById('dokiRouteTitle');
+  const dokiRouteNote = document.getElementById('dokiRouteNote');
+  const dokiRouteBack = document.getElementById('dokiRouteBack');
   const messagesEl = document.getElementById('messages');
   const inputEl = document.getElementById('userInput');
   const sendBtn = document.getElementById('sendBtn');
@@ -2525,6 +2566,42 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     if(dokiMenuOpen) updateDokiMenuSummary();
   }
 
+  let dokiRoute = 'chat';
+
+  function showDokiRoute(route){
+    const definitions = {
+      chat: {
+        icon:'🦆',
+        title:'Chat with Doki',
+        note:'Normal Doki conversation. Grammar checking stays separate from Chat.',
+        nonChat:false
+      },
+      grammar: {
+        icon:'📝',
+        title:'Grammar Check',
+        note:'The dedicated grammar workspace will be connected in Stage C. Chat remains separate.',
+        nonChat:true
+      },
+      academy: {
+        icon:'🎯',
+        title:'Pond Academy',
+        note:'The interactive learning and quiz hub will be built in Stage D. No quiz logic is added in Stage B.',
+        nonChat:true
+      }
+    };
+    const view = definitions[route] || definitions.chat;
+    dokiRoute = route in definitions ? route : 'chat';
+    if(dokiRouteIcon) dokiRouteIcon.textContent = view.icon;
+    if(dokiRouteTitle) dokiRouteTitle.textContent = view.title;
+    if(dokiRouteNote) dokiRouteNote.textContent = view.note;
+    phone.classList.toggle('route-nonchat', !!view.nonChat);
+    if(dokiRoutePanel) dokiRoutePanel.setAttribute('aria-hidden', view.nonChat ? 'false' : 'true');
+    if(dokiRoute === 'chat'){
+      scrollToBottom();
+      if(inputEl) inputEl.focus();
+    }
+  }
+
   menuTrigger.addEventListener('click', function(){ setDokiMenuOpen(!dokiMenuOpen); });
   dokiMenuClose.addEventListener('click', function(){ setDokiMenuOpen(false); });
   dokiMenuBackdrop.addEventListener('click', function(){ setDokiMenuOpen(false); });
@@ -2544,6 +2621,19 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     setDokiMenuOpen(false);
     openLeaderboard();
   });
+  menuChatBtn.addEventListener('click', function(){
+    setDokiMenuOpen(false);
+    showDokiRoute('chat');
+  });
+  menuGrammarBtn.addEventListener('click', function(){
+    setDokiMenuOpen(false);
+    showDokiRoute('grammar');
+  });
+  menuAcademyBtn.addEventListener('click', function(){
+    setDokiMenuOpen(false);
+    showDokiRoute('academy');
+  });
+  dokiRouteBack.addEventListener('click', function(){ showDokiRoute('chat'); });
 
 
   profileModalClose.addEventListener('click', function(){ setModalOpen(profileModal, false); });
@@ -2561,6 +2651,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       closeLeaderboard();
     }
   });
+
+  showDokiRoute('chat');
 
 })();
 </script>
