@@ -732,7 +732,7 @@
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-database-compat.js"></script>
 <script type="module">
-import { getApp as getModularFirebaseApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
+import { getApp as getModularFirebaseApp, initializeApp as initializeModularFirebaseApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app-check.js';
 import { getAI, getGenerativeModel, GoogleAIBackend, Schema } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-ai.js';
 import { WorkerLinter } from 'https://unpkg.com/harper.js@2.4.0/dist/index.js';
@@ -820,6 +820,16 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     scheduleCloudSync();
   }
 
+  function getDokiModularFirebaseApp(){
+    if(dokiModularFirebaseApp) return dokiModularFirebaseApp;
+    try {
+      dokiModularFirebaseApp = getModularFirebaseApp('dokiDuckAiModular');
+    } catch(e) {
+      dokiModularFirebaseApp = initializeModularFirebaseApp(FIREBASE_CONFIG, 'dokiDuckAiModular');
+    }
+    return dokiModularFirebaseApp;
+  }
+
   async function initFirebaseIdentity(){
     try {
       if(!window.firebase) throw new Error('Firebase SDK did not load.');
@@ -827,7 +837,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
 
       // Firebase App Check: use the modular Web SDK for AI Logic attestation.
       // Compat Auth/Realtime Database remain unchanged.
-      const modularApp = getModularFirebaseApp();
+      const modularApp = getDokiModularFirebaseApp();
       if(!modularAppCheckInstance){
         try {
           modularAppCheckInstance = initializeAppCheck(modularApp, {
@@ -996,6 +1006,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   let dokiChatGeminiUnavailableLogged = false;
   let dokiChatGeminiInitError = null;
   let dokiChatGeminiLastError = null;
+  let dokiModularFirebaseApp = null;
   let modularAppCheckInstance = null;
 
   function splitDokiSentences(text){
@@ -1092,7 +1103,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
           throw new Error('Firebase app is not initialized yet.');
         }
 
-        const modularApp = getModularFirebaseApp();
+        const modularApp = getDokiModularFirebaseApp();
         const ai = getAI(modularApp, { backend: new GoogleAIBackend() });
 
         const correctionSchema = Schema.object({
@@ -1291,7 +1302,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
           throw new Error('Firebase app is not initialized yet.');
         }
 
-        const modularApp = getModularFirebaseApp();
+        const modularApp = getDokiModularFirebaseApp();
         const ai = getAI(modularApp, { backend: new GoogleAIBackend() });
         dokiChatGeminiModel = getGenerativeModel(ai, {
           model: DOKI_GEMINI_MODEL,
