@@ -402,8 +402,10 @@
   .doki-menu-avatar{width:42px;height:42px;border-radius:13px;background:#eef1e2;border:1.5px solid #222;display:grid;place-items:center;font-size:22px;flex:0 0 auto}
   .doki-menu-profile-name{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .doki-menu-profile-meta{font-size:10px;opacity:.65;margin-top:2px}
-  .doki-menu-list{padding:6px 10px 14px;overflow:auto}
-  .doki-menu-item{width:100%;border:0;background:transparent;color:inherit;border-radius:13px;display:flex;align-items:center;gap:12px;padding:13px 10px;text-align:left;cursor:pointer;font:inherit;transition:background .15s ease,transform .15s ease}
+  .doki-menu-list{flex:1 1 auto;min-height:0;padding:8px 10px 16px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  .doki-menu-section-label{padding:10px 10px 6px;font-size:9px;font-weight:900;letter-spacing:.9px;text-transform:uppercase;color:#7b766d}
+  .doki-menu-section-label:first-child{padding-top:4px}
+  .doki-menu-item{width:100%;border:0;background:transparent;color:inherit;border-radius:13px;display:flex;align-items:center;gap:12px;padding:12px 10px;text-align:left;cursor:pointer;font:inherit;transition:background .15s ease,transform .15s ease,box-shadow .15s ease}
   .doki-menu-item:active{transform:scale(.985);background:#e9eddc}
   .doki-menu-icon{width:34px;height:34px;border-radius:10px;background:#eef1e2;border:1px solid #c5cbb4;display:grid;place-items:center;font-size:17px;flex:0 0 auto}
   .doki-menu-item-copy{min-width:0;flex:1}
@@ -695,10 +697,11 @@
     <div style="min-width:0"><div class="doki-menu-profile-name" id="dokiMenuProfileName">Your Doki</div><div class="doki-menu-profile-meta" id="dokiMenuProfileMeta">Level 1 · 0 XP</div></div>
   </div>
   <nav class="doki-menu-list" aria-label="Doki navigation">
+    <div class="doki-menu-section-label">Your Doki</div>
     <button class="doki-menu-item" id="menuProfileBtn" type="button"><span class="doki-menu-icon">👤</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">My Doki</span><span class="doki-menu-item-note">Profile, XP and pond progress</span></span><span class="doki-menu-arrow">›</span></button>
     <button class="doki-menu-item" id="menuTrophyBtn" type="button"><span class="doki-menu-icon">🏆</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Trophy Room</span><span class="doki-menu-item-note">Earned and locked Doki trophies</span></span><span class="doki-menu-arrow">›</span></button>
     <button class="doki-menu-item" id="menuLeaderboardBtn" type="button"><span class="doki-menu-icon">📊</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Pond Leaderboard</span><span class="doki-menu-item-note">See the shared XP rankings</span></span><span class="doki-menu-arrow">›</span></button>
-    <div class="doki-menu-divider" aria-hidden="true"></div>
+    <div class="doki-menu-section-label">Learn &amp; Practice</div>
     <button class="doki-menu-item" id="menuChatBtn" type="button"><span class="doki-menu-icon">🦆</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Chat with Doki</span><span class="doki-menu-item-note">Normal AI conversation</span></span><span class="doki-menu-arrow">›</span></button>
     <button class="doki-menu-item" id="menuGrammarBtn" type="button"><span class="doki-menu-icon">📝</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Grammar Check</span><span class="doki-menu-item-note">Dedicated grammar correction tool</span></span><span class="doki-menu-arrow">›</span></button>
     <button class="doki-menu-item" id="menuAcademyBtn" type="button"><span class="doki-menu-icon">🎯</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Pond Academy</span><span class="doki-menu-item-note">Grammar learning and quiz hub</span></span><span class="doki-menu-arrow">›</span></button>
