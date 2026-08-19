@@ -820,6 +820,16 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     scheduleCloudSync();
   }
 
+  // Gemini/App Check state must be declared before initFirebaseIdentity() can run.
+  let dokiChatGeminiModel = null;
+  let dokiChatGeminiInitPromise = null;
+  let dokiChatGeminiUnavailableLogged = false;
+  let dokiChatGeminiInitError = null;
+  let dokiChatGeminiLastError = null;
+  let dokiModularFirebaseApp = null;
+  let modularAppCheckInstance = null;
+  let modularAppCheckInitError = null;
+
   function getDokiModularFirebaseApp(){
     if(dokiModularFirebaseApp) return dokiModularFirebaseApp;
     try {
@@ -835,7 +845,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     const modularApp = getDokiModularFirebaseApp();
     try {
       modularAppCheckInstance = initializeAppCheck(modularApp, {
-        provider: new ReCaptchaEnterpriseProvider('6LfWh40tAAAAANQNJVWc4CNshFFAMxSSJW6s38my'),
+        provider: new ReCaptchaEnterpriseProvider('6LfWh40tAAAAANQNJVVc4CNshFFAMxSSJW6s38my'),
         isTokenAutoRefreshEnabled: true
       });
       modularAppCheckInitError = null;
@@ -1009,14 +1019,6 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
 
   // PASS 3C-C2.2.5: separate Gemini conversational persona.
   // This is intentionally isolated from the grammar-verifier model/configuration.
-  let dokiChatGeminiModel = null;
-  let dokiChatGeminiInitPromise = null;
-  let dokiChatGeminiUnavailableLogged = false;
-  let dokiChatGeminiInitError = null;
-  let dokiChatGeminiLastError = null;
-  let dokiModularFirebaseApp = null;
-  let modularAppCheckInstance = null;
-  let modularAppCheckInitError = null;
 
   function splitDokiSentences(text){
     return String(text || '')
