@@ -355,6 +355,74 @@
   .phone.incognito .send-btn{ background:#57508a; border-color:#8a84c9; color:#f0eefc; }
   .phone.incognito .send-btn:hover{ background:#453f70; }
 
+  /* STAGE C: dedicated Grammar Check route + preserved top-level navigation */
+  .phone.route-nonchat #messages,
+  .phone.route-nonchat .meter,
+  .phone.route-nonchat #grammarStatus,
+  .phone.route-nonchat #geminiDiagnosticPanel,
+  .phone.route-nonchat #grammarLearningPanel,
+  .phone.route-nonchat .inputbar{display:none!important;}
+  .doki-route-panel{display:none;flex:1;min-height:0;overflow:auto;background:var(--cream);padding:18px 16px;}
+  .phone.route-nonchat .doki-route-panel{display:flex;align-items:center;justify-content:center;}
+  .phone.route-grammar .doki-route-panel{align-items:stretch;justify-content:center;}
+  .phone.route-grammar #dokiGenericRouteCard{display:none;}
+  .phone.route-grammar #grammarWorkspace{display:block;}
+  .phone.route-academy #grammarWorkspace{display:none;}
+  .phone.route-academy #dokiGenericRouteCard{display:block;}
+  .phone.incognito .doki-route-panel{background:#232230;}
+  .doki-route-card{width:min(100%,560px);background:#fff;border:2px solid var(--ink);border-radius:20px;padding:22px 18px;box-shadow:0 10px 24px rgba(0,0,0,.08);text-align:center;}
+  .doki-route-icon{font-size:38px;line-height:1;margin-bottom:8px;}
+  .doki-route-title{font-family:'Baloo 2',sans-serif;font-size:1.45rem;font-weight:900;}
+  .doki-route-note{margin:6px auto 16px;max-width:430px;font-size:12px;line-height:1.5;opacity:.72;}
+  .doki-route-back{border:2px solid var(--ink);border-radius:12px;background:var(--olive);color:#fff;padding:10px 14px;font-weight:900;font-size:12px;cursor:pointer;}
+  .grammar-workspace{
+    width:min(100%,620px);
+    max-height:100%;
+    overflow:auto;
+    background:#fff;
+    border:2px solid var(--ink);
+    border-radius:20px;
+    padding:20px 18px;
+    box-shadow:0 10px 24px rgba(0,0,0,.08);
+  }
+  .grammar-workspace-head{margin-bottom:12px;text-align:left;}
+  .grammar-workspace-input{
+    width:100%;
+    min-height:150px;
+    resize:vertical;
+    box-sizing:border-box;
+    border:2px solid #c9c1b3;
+    border-radius:14px;
+    background:#fffdf8;
+    color:var(--ink);
+    padding:13px;
+    font:500 14px/1.55 'Nunito',sans-serif;
+    outline:none;
+  }
+  .grammar-workspace-input:focus{border-color:var(--olive);box-shadow:0 0 0 3px rgba(112,124,92,.16);}
+  .grammar-workspace-actions{display:flex;gap:9px;margin-top:10px;}
+  .grammar-workspace-check,.grammar-workspace-clear{
+    border:2px solid var(--ink);
+    border-radius:12px;
+    padding:10px 14px;
+    font-weight:900;
+    cursor:pointer;
+  }
+  .grammar-workspace-check{background:var(--olive);color:#fff;flex:1;}
+  .grammar-workspace-clear{background:#f5f1e8;color:var(--ink);}
+  .grammar-workspace-check:disabled{opacity:.6;cursor:wait;}
+  .grammar-workspace .grammar-status{min-height:20px;margin:10px 2px 0;text-align:left;}
+  .grammar-workspace-empty{font-size:11px;line-height:1.45;opacity:.65;text-align:center;padding:10px 4px;}
+  .grammar-workspace .grammar-learning-panel{margin-top:8px;}
+  .phone.incognito .grammar-workspace{background:#2f2e3a;color:#eae7f5;border-color:#5b596a;}
+  .phone.incognito .grammar-workspace-input{background:#24232e;color:#eae7f5;border-color:#5b596a;}
+  .phone.incognito .grammar-workspace-clear{background:#454358;color:#eae7f5;border-color:#8a84c9;}
+
+  .phone.incognito .doki-route-card{background:#2f2e3a;color:#eae7f5;border-color:#5b596a;}
+  .phone.incognito .doki-route-back{background:#57508a;border-color:#8a84c9;}
+  .doki-menu-divider{height:1px;background:#d1c9bb;margin:7px 10px;}
+  .phone.incognito .doki-menu-divider{background:#4d4a60;}
+
   ::-webkit-scrollbar{width:8px;}
   ::-webkit-scrollbar-thumb{background:#D9CDA9; border-radius:8px;}
   .phone.incognito ::-webkit-scrollbar-thumb{ background:#454358; }
@@ -382,8 +450,10 @@
   .doki-menu-avatar{width:42px;height:42px;border-radius:13px;background:#eef1e2;border:1.5px solid #222;display:grid;place-items:center;font-size:22px;flex:0 0 auto}
   .doki-menu-profile-name{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .doki-menu-profile-meta{font-size:10px;opacity:.65;margin-top:2px}
-  .doki-menu-list{padding:6px 10px 14px;overflow:auto;flex:1;min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-  .doki-menu-item{width:100%;border:0;background:transparent;color:inherit;border-radius:13px;display:flex;align-items:center;gap:12px;padding:13px 10px;text-align:left;cursor:pointer;font:inherit;transition:background .15s ease,transform .15s ease}
+  .doki-menu-list{flex:1 1 auto;min-height:0;padding:8px 10px 16px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  .doki-menu-section-label{padding:10px 10px 6px;font-size:9px;font-weight:900;letter-spacing:.9px;text-transform:uppercase;color:#7b766d}
+  .doki-menu-section-label:first-child{padding-top:4px}
+  .doki-menu-item{width:100%;border:0;background:transparent;color:inherit;border-radius:13px;display:flex;align-items:center;gap:12px;padding:12px 10px;text-align:left;cursor:pointer;font:inherit;transition:background .15s ease,transform .15s ease,box-shadow .15s ease}
   .doki-menu-item:active{transform:scale(.985);background:#e9eddc}
   .doki-menu-icon{width:34px;height:34px;border-radius:10px;background:#eef1e2;border:1px solid #c5cbb4;display:grid;place-items:center;font-size:17px;flex:0 0 auto}
   .doki-menu-item-copy{min-width:0;flex:1}
@@ -395,65 +465,6 @@
   .phone.incognito .doki-menu-profile,.phone.incognito .doki-menu-icon{background:#302f39;border-color:#66627c}
   .phone.incognito .doki-menu-item:active{background:#34323f}
   @media(max-width:430px){.menu-trigger{width:38px;height:38px}.doki-menu-panel{width:min(90vw,340px)}}
-  /* PASS E: Pond Academy quiz hub */
-  .academy-modal{position:fixed;inset:0;z-index:9050;background:rgba(15,17,13,.72);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:12px}
-  .academy-modal.hidden{display:none!important}
-  .academy-shell{width:min(100%,620px);max-height:calc(100dvh - 24px);background:#f7f2e7;color:#222;border:2px solid #222;border-radius:22px;box-shadow:0 18px 60px rgba(0,0,0,.36);overflow:hidden;display:flex;flex-direction:column}
-  .academy-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;background:#dfe7c9;border-bottom:1px solid #bbb}
-  .academy-title{font-family:'Baloo 2',sans-serif;font-size:1.22rem;font-weight:900}
-  .academy-sub{font-size:10px;opacity:.68;margin-top:2px}
-  .academy-close{width:36px;height:36px;border:2px solid #222;border-radius:50%;background:transparent;font-size:20px;cursor:pointer}
-  .academy-body{padding:14px;overflow:auto}
-  .academy-hub-intro{font-size:11px;line-height:1.45;opacity:.72;margin:0 0 12px}
-  .academy-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:12px}
-  .academy-stat{background:#fff;border:1.5px solid #c8c0b1;border-radius:12px;padding:8px 9px;text-align:center}
-  .academy-stat strong{display:block;font-size:15px}
-  .academy-stat span{font-size:9px;opacity:.65}
-  .academy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-  .academy-option{border:1.5px solid #c8c0b1;background:#fff;border-radius:15px;padding:11px;text-align:left;cursor:pointer;color:#222;min-height:78px;transition:transform .14s ease,box-shadow .18s ease,border-color .18s ease,background .18s ease}
-  .academy-option:hover{transform:translateY(-1px);box-shadow:0 7px 16px rgba(0,0,0,.07);border-color:#707c5c}
-  .academy-option:active{transform:translateY(1px)}
-  .academy-option-title{font-weight:900;font-size:12px;display:block}
-  .academy-option-note{font-size:10px;line-height:1.35;opacity:.66;display:block;margin-top:4px}
-  .academy-quiz{display:none}
-  .academy-quiz.visible{display:block}
-  .academy-hub.hidden{display:none}
-  .academy-quiz-meta{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px;font-size:10px;font-family:'JetBrains Mono',monospace}
-  .academy-progress{height:8px;border-radius:999px;background:#e3ddcf;overflow:hidden;margin-bottom:12px}
-  .academy-progress-fill{height:100%;width:0;background:#707c5c;transition:width .2s ease}
-  .academy-question-card{background:#fff;border:2px solid #222;border-radius:16px;padding:13px;margin-bottom:10px}
-  .academy-question-kicker{font-size:9px;text-transform:uppercase;letter-spacing:.7px;opacity:.62;font-weight:900}
-  .academy-question{font-size:16px;line-height:1.45;font-weight:900;margin-top:4px}
-  .academy-options{display:grid;gap:8px}
-  .academy-answer{border:2px solid #222;border-radius:12px;background:#fff;padding:10px 12px;text-align:left;font:inherit;font-weight:800;cursor:pointer}
-  .academy-answer:hover{background:#eef1e2}
-  .academy-answer.correct{background:#dcebcf;border-color:#62784d}
-  .academy-answer.wrong{background:#f5dfdc;border-color:#9a5b18}
-  .academy-answer:disabled{cursor:default}
-  .academy-result{margin-top:10px;padding:10px 11px;border-radius:12px;background:#eef1e2;border:1px solid #c8d0ad;display:none}
-  .academy-result.visible{display:block}
-  .academy-result-title{font-weight:900;font-size:12px}
-  .academy-result-text{font-size:11px;line-height:1.45;margin-top:4px}
-  .academy-commentary{font-size:11px;line-height:1.4;margin-top:7px;padding:8px 9px;border-left:3px solid #707c5c;background:#f7f5ea}
-  .academy-actions{display:flex;gap:8px;margin-top:10px}
-  .academy-action-btn{flex:1;border:2px solid #222;border-radius:12px;padding:10px 12px;background:#707c5c;color:#fff;font-weight:900;cursor:pointer}
-  .academy-action-secondary{background:transparent;color:#222}
-  .academy-loading{display:none;align-items:center;justify-content:center;gap:9px;padding:8px 0;color:#5f654e;font-size:10px;font-family:'JetBrains Mono',monospace}
-  .academy-loading.visible{display:flex}
-  .academy-dot{width:7px;height:7px;border-radius:50%;background:#707c5c;animation:academyPulse 1s infinite ease-in-out}
-  .academy-dot:nth-child(2){animation-delay:.15s}.academy-dot:nth-child(3){animation-delay:.3s}
-  @keyframes academyPulse{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
-  .academy-finish{display:none;text-align:center;padding:12px}.academy-finish.visible{display:block}
-  .academy-finish-score{font-size:28px;font-weight:900;font-family:'Baloo 2',sans-serif}
-  .academy-finish-note{font-size:11px;line-height:1.45;opacity:.72;margin:4px 0 12px}
-  .phone.incognito .academy-shell{background:#24232c;color:#eee;border-color:#66627c}
-  .phone.incognito .academy-head{background:#34323f;border-color:#555265}
-  .phone.incognito .academy-stat,.phone.incognito .academy-option,.phone.incognito .academy-question-card{background:#302f39;color:#eee;border-color:#66627c}
-  .phone.incognito .academy-answer{background:#2d2c35;color:#eee;border-color:#66627c}
-  .phone.incognito .academy-answer.correct{background:#33402f}.phone.incognito .academy-answer.wrong{background:#432d32}
-  .phone.incognito .academy-result{background:#343a32;border-color:#6b7856}.phone.incognito .academy-commentary{background:#34323f;border-left-color:#8a84c9}
-  @media(max-width:430px){.academy-grid{grid-template-columns:1fr}.academy-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.academy-shell{border-radius:18px}}
-
   .modal-backdrop{position:fixed;inset:0;z-index:9000;background:rgba(15,17,13,.68);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:14px}
   .modal-backdrop.hidden{display:none!important}
   .data-modal{width:min(100%,520px);max-height:calc(100dvh - 28px);background:#f7f2e7;color:#222;border:2px solid #222;border-radius:22px;box-shadow:0 18px 60px rgba(0,0,0,.38);overflow:hidden;display:flex;flex-direction:column}
@@ -677,6 +688,48 @@
     </div>
   </div>
 
+  <div class="doki-route-panel" id="dokiRoutePanel" aria-live="polite" aria-hidden="true">
+    <div class="doki-route-card" id="dokiGenericRouteCard">
+      <div class="doki-route-icon" id="dokiRouteIcon">📝</div>
+      <div class="doki-route-title" id="dokiRouteTitle">Pond Academy</div>
+      <div class="doki-route-note" id="dokiRouteNote">The interactive learning and quiz hub will be built in Stage D.</div>
+      <button class="doki-route-back" id="dokiRouteBack" type="button">← Back to Chat</button>
+    </div>
+
+    <div class="grammar-workspace" id="grammarWorkspace" aria-hidden="true">
+      <div class="grammar-workspace-head">
+        <div>
+          <div class="doki-route-icon">📝</div>
+          <div class="doki-route-title">Grammar Check</div>
+          <div class="doki-route-note">Paste or type what you wrote. Doki checks it without interfering with normal Chat.</div>
+        </div>
+      </div>
+
+      <textarea id="grammarWorkspaceInput" class="grammar-workspace-input"
+        maxlength="1200" placeholder="Write a sentence or paragraph to check…"
+        aria-label="Text to grammar check"></textarea>
+
+      <div class="grammar-workspace-actions">
+        <button id="grammarWorkspaceBtn" type="button" class="grammar-workspace-check">🦆 Check Grammar</button>
+        <button id="grammarWorkspaceClear" type="button" class="grammar-workspace-clear">Clear</button>
+      </div>
+
+      <div class="grammar-status" id="grammarStatus" aria-live="polite"></div>
+
+      <div class="grammar-learning-panel" id="grammarLearningPanel" role="region"
+           aria-label="Doki Grammar Police" aria-live="polite" aria-hidden="true">
+        <div class="grammar-learning-head" id="grammarLearningHead">🚨 Doki Grammar Police</div>
+        <div class="grammar-learning-body" id="grammarLearningBody"></div>
+      </div>
+
+      <div class="grammar-workspace-empty" id="grammarWorkspaceEmpty">
+        Doki will keep this space quiet when your writing is already clean.
+      </div>
+
+      <button class="doki-route-back" id="dokiRouteBackGrammar" type="button">← Back to Chat</button>
+    </div>
+  </div>
+
   <div class="messages" id="messages">
     <div class="system-note" id="systemNote">You are now chatting with Doki Duck AI. It has one skill.</div>
     <div class="row bot">
@@ -696,14 +749,9 @@
 
   <div class="meter" id="meter">&nbsp;</div>
 
-  <div class="grammar-status" id="grammarStatus" aria-live="polite">Grammar engine: starting…</div>
   <div id="geminiDiagnosticPanel" style="display:block;margin:6px 12px 8px;padding:10px 12px;background:#eef1e2;border:1.5px dashed #707c5c;border-radius:14px;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#545e44;line-height:1.4;">
     <div id="geminiDiagnosticMessage">Gemini diagnostic ready.</div>
     <button id="geminiDiagnosticBtn" type="button" style="margin-top:8px;border:2px solid #241f18;border-radius:10px;padding:8px 11px;background:#707c5c;color:#fff;font-weight:900;cursor:pointer;">Test Gemini</button>
-  </div>
-  <div class="grammar-learning-panel" id="grammarLearningPanel" role="region" aria-label="Doki Grammar Police" aria-live="polite" aria-hidden="true">
-    <div class="grammar-learning-head" id="grammarLearningHead">🚨 Doki Grammar Police</div>
-    <div class="grammar-learning-body" id="grammarLearningBody"></div>
   </div>
 
   <div class="inputbar">
@@ -725,63 +773,16 @@
     <div style="min-width:0"><div class="doki-menu-profile-name" id="dokiMenuProfileName">Your Doki</div><div class="doki-menu-profile-meta" id="dokiMenuProfileMeta">Level 1 · 0 XP</div></div>
   </div>
   <nav class="doki-menu-list" aria-label="Doki navigation">
+    <div class="doki-menu-section-label">Your Doki</div>
     <button class="doki-menu-item" id="menuProfileBtn" type="button"><span class="doki-menu-icon">👤</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">My Doki</span><span class="doki-menu-item-note">Profile, XP and pond progress</span></span><span class="doki-menu-arrow">›</span></button>
     <button class="doki-menu-item" id="menuTrophyBtn" type="button"><span class="doki-menu-icon">🏆</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Trophy Room</span><span class="doki-menu-item-note">Earned and locked Doki trophies</span></span><span class="doki-menu-arrow">›</span></button>
     <button class="doki-menu-item" id="menuLeaderboardBtn" type="button"><span class="doki-menu-icon">📊</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Pond Leaderboard</span><span class="doki-menu-item-note">See the shared XP rankings</span></span><span class="doki-menu-arrow">›</span></button>
-    <div style="padding:7px 10px 3px;font-size:9px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;opacity:.55">Learn &amp; Practice</div>
-    <button class="doki-menu-item" id="menuChatBtn" type="button"><span class="doki-menu-icon">🦆</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Chat with Doki</span><span class="doki-menu-item-note">Normal Doki conversation</span></span><span class="doki-menu-arrow">›</span></button>
+    <div class="doki-menu-section-label">Learn &amp; Practice</div>
+    <button class="doki-menu-item" id="menuChatBtn" type="button"><span class="doki-menu-icon">🦆</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Chat with Doki</span><span class="doki-menu-item-note">Normal AI conversation</span></span><span class="doki-menu-arrow">›</span></button>
     <button class="doki-menu-item" id="menuGrammarBtn" type="button"><span class="doki-menu-icon">📝</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Grammar Check</span><span class="doki-menu-item-note">Dedicated grammar correction tool</span></span><span class="doki-menu-arrow">›</span></button>
     <button class="doki-menu-item" id="menuAcademyBtn" type="button"><span class="doki-menu-icon">🎯</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Pond Academy</span><span class="doki-menu-item-note">Grammar learning and quiz hub</span></span><span class="doki-menu-arrow">›</span></button>
   </nav>
 </aside>
-
-<!-- PASS E: Pond Academy -->
-<div class="academy-modal hidden" id="academyModal" aria-hidden="true">
-  <section class="academy-shell" role="dialog" aria-modal="true" aria-labelledby="academyTitle">
-    <div class="academy-head">
-      <div><div class="academy-title" id="academyTitle">🎯 Pond Academy</div><div class="academy-sub">Learn it. Quiz it. Make Doki mildly impressed.</div></div>
-      <button class="academy-close" id="academyClose" type="button" aria-label="Close Pond Academy">×</button>
-    </div>
-    <div class="academy-body">
-      <div class="academy-hub" id="academyHub">
-        <p class="academy-hub-intro">Pick a pond. Questions are scored locally, while Gemini may explain your answer in Doki's voice.</p>
-        <div class="academy-stats">
-          <div class="academy-stat"><strong id="academyLevelStat">1</strong><span>Level</span></div>
-          <div class="academy-stat"><strong id="academyXpStat">0</strong><span>XP</span></div>
-          <div class="academy-stat"><strong id="academyAccuracyStat">—</strong><span>Accuracy</span></div>
-        </div>
-        <div class="academy-grid" id="academyOptions"></div>
-      </div>
-      <div class="academy-quiz" id="academyQuiz">
-        <div class="academy-quiz-meta"><span id="academyQuizLabel">Pond Quiz</span><span id="academyQuizCounter">1/5</span></div>
-        <div class="academy-progress"><div class="academy-progress-fill" id="academyProgressFill"></div></div>
-        <div class="academy-question-card">
-          <div class="academy-question-kicker" id="academyQuestionKicker">Grammar</div>
-          <div class="academy-question" id="academyQuestion">Loading…</div>
-        </div>
-        <div class="academy-options" id="academyAnswers"></div>
-        <div class="academy-loading" id="academyGeminiLoading"><span class="academy-dot"></span><span class="academy-dot"></span><span class="academy-dot"></span><span> Doki is hatching an explanation…</span></div>
-        <div class="academy-result" id="academyResult">
-          <div class="academy-result-title" id="academyResultTitle"></div>
-          <div class="academy-result-text" id="academyResultText"></div>
-          <div class="academy-commentary" id="academyCommentary"></div>
-        </div>
-        <div class="academy-actions" id="academyQuizActions">
-          <button class="academy-action-btn academy-action-secondary" id="academyQuitBtn" type="button">Back to Pond</button>
-          <button class="academy-action-btn" id="academyNextBtn" type="button" disabled>Next Question</button>
-        </div>
-      </div>
-      <div class="academy-finish" id="academyFinish">
-        <div class="academy-finish-score" id="academyFinishScore">0/5</div>
-        <div class="academy-finish-note" id="academyFinishNote">The pond has recorded your performance.</div>
-        <div class="academy-actions">
-          <button class="academy-action-btn academy-action-secondary" id="academyFinishBack" type="button">Pond Menu</button>
-          <button class="academy-action-btn" id="academyRetryBtn" type="button">Try Again</button>
-        </div>
-      </div>
-    </div>
-  </section>
-</div>
 
 <!-- PASS 2B: player profile + shared leaderboard -->
 <div class="modal-backdrop hidden" id="profileModal" aria-hidden="true">
@@ -1046,9 +1047,6 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   const menuChatBtn = document.getElementById('menuChatBtn');
   const menuGrammarBtn = document.getElementById('menuGrammarBtn');
   const menuAcademyBtn = document.getElementById('menuAcademyBtn');
-  const menuChatBtn = document.getElementById('menuChatBtn');
-  const menuGrammarBtn = document.getElementById('menuGrammarBtn');
-  const menuAcademyBtn = document.getElementById('menuAcademyBtn');
   const dokiMenuProfileName = document.getElementById('dokiMenuProfileName');
   const dokiMenuProfileMeta = document.getElementById('dokiMenuProfileMeta');
 
@@ -1106,6 +1104,11 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   window.dokiContext = { get: getDokiContext, clear: clearDokiContext };
 
   const phone = document.getElementById('phone');
+  const dokiRoutePanel = document.getElementById('dokiRoutePanel');
+  const dokiRouteIcon = document.getElementById('dokiRouteIcon');
+  const dokiRouteTitle = document.getElementById('dokiRouteTitle');
+  const dokiRouteNote = document.getElementById('dokiRouteNote');
+  const dokiRouteBack = document.getElementById('dokiRouteBack');
   const messagesEl = document.getElementById('messages');
   const inputEl = document.getElementById('userInput');
   const sendBtn = document.getElementById('sendBtn');
@@ -1114,6 +1117,11 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   const grammarLearningPanel = document.getElementById('grammarLearningPanel');
   const grammarLearningHead = document.getElementById('grammarLearningHead');
   const grammarLearningBody = document.getElementById('grammarLearningBody');
+  const grammarWorkspaceInput = document.getElementById('grammarWorkspaceInput');
+  const grammarWorkspaceBtn = document.getElementById('grammarWorkspaceBtn');
+  const grammarWorkspaceClear = document.getElementById('grammarWorkspaceClear');
+  const grammarWorkspaceEmpty = document.getElementById('grammarWorkspaceEmpty');
+  const dokiRouteBackGrammar = document.getElementById('dokiRouteBackGrammar');
   // Pass 3B: monotonically increasing scan token prevents an older async Harper
   // result from overwriting a newer message's grammar result.
   let grammarScanToken = 0;
@@ -1794,185 +1802,6 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       achievementList.appendChild(card);
     });
   }
-
-
-  // PASS E: local-first Pond Academy quiz engine.
-  const ACADEMY_TOPICS = [
-    {id:'today', icon:'📰', title:"Today's Pond Pick", note:'Doki picks the most useful topic for you today.', mode:'today'},
-    {id:'weak', icon:'🎯', title:'My Weak Spots', note:'Practice the grammar your stats say needs help.', mode:'weak'},
-    {id:'easy', icon:'🌱', title:'Easy Pond', note:'Warm-up grammar for steady progress.', difficulty:'easy'},
-    {id:'deep', icon:'🌊', title:'Deep Pond', note:'Intermediate questions with a little more bite.', difficulty:'medium'},
-    {id:'wild', icon:'🌪️', title:'Wild Pond', note:'Advanced grammar. Doki has no sympathy.', difficulty:'hard'},
-    {id:'school', icon:'🎒', title:'School Mode', note:'Classroom-style grammar practice.', mode:'school'},
-    {id:'real', icon:'💼', title:'Real-Life English', note:'Emails, work, travel and everyday English.', mode:'real'},
-    {id:'conversation', icon:'🗣️', title:'Conversation Mode', note:'Grammar choices from natural conversation.', mode:'conversation'},
-    {id:'revenge', icon:'🔥', title:'Mistake Revenge', note:'Return to mistakes you keep making.', mode:'weak'},
-    {id:'surprise', icon:'🎲', title:'Surprise Me', note:'Doki chooses. You survive.', mode:'random'}
-  ];
-  const ACADEMY_BANK = [
-    {id:'prep1',topic:'Prepositions',difficulty:'easy',q:'The book is ___ the table.',options:['in','on','at','to'],answer:1,why:'Use “on” when something rests on a surface.'},
-    {id:'prep2',topic:'Prepositions',difficulty:'medium',q:'We arrived ___ the station before noon.',options:['at','on','in','to'],answer:0,why:'“Arrive at” is used for a specific place such as a station.'},
-    {id:'prep3',topic:'Prepositions',difficulty:'hard',q:'She has been interested ___ astronomy since childhood.',options:['on','at','in','for'],answer:2,why:'The standard collocation is “interested in”.'},
-    {id:'prep4',topic:'Prepositions',difficulty:'medium',q:'He walked ___ the bridge and stopped halfway.',options:['across','at','into','between'],answer:0,why:'“Across” describes movement from one side to the other.'},
-    {id:'phrasal1',topic:'Phrasal Verbs',difficulty:'easy',q:'Please ___ the lights before you leave.',options:['turn off','turn in','turn up','turn over'],answer:0,why:'“Turn off” means to switch something off.'},
-    {id:'phrasal2',topic:'Phrasal Verbs',difficulty:'medium',q:'I need to ___ this problem before tomorrow.',options:['look after','look into','look up','look out'],answer:1,why:'“Look into” means investigate or examine.'},
-    {id:'phrasal3',topic:'Phrasal Verbs',difficulty:'hard',q:'The meeting was ___ until next week.',options:['put off','put out','put on','put away'],answer:0,why:'“Put off” means postpone.'},
-    {id:'sv1',topic:'Subject–Verb Agreement',difficulty:'easy',q:'She ___ to school every day.',options:['go','goes','going','gone'],answer:1,why:'A singular third-person subject takes “goes” in the present tense.'},
-    {id:'sv2',topic:'Subject–Verb Agreement',difficulty:'medium',q:'The students ___ ready for the exam.',options:['is','was','are','be'],answer:2,why:'“Students” is plural, so use “are”.'},
-    {id:'sv3',topic:'Subject–Verb Agreement',difficulty:'hard',q:'Each of the players ___ a new uniform.',options:['have','has','having','are having'],answer:1,why:'“Each” is singular, so the verb is “has”.'},
-    {id:'tense1',topic:'Tenses',difficulty:'easy',q:'Yesterday, I ___ to the market.',options:['go','went','gone','going'],answer:1,why:'“Yesterday” signals a completed past action, so use “went”.'},
-    {id:'tense2',topic:'Tenses',difficulty:'medium',q:'By the time we arrived, the film ___.',options:['starts','started','had started','has started'],answer:2,why:'The earlier past action uses the past perfect: “had started”.'},
-    {id:'article1',topic:'Articles',difficulty:'easy',q:'She bought ___ umbrella because it was raining.',options:['a','an','the','no article'],answer:1,why:'“Umbrella” begins with a vowel sound, so use “an”.'},
-    {id:'article2',topic:'Articles',difficulty:'medium',q:'I saw ___ moon last night.',options:['a','an','the','no article'],answer:2,why:'We normally use “the” for a unique object such as the moon.'},
-    {id:'pronoun1',topic:'Pronouns',difficulty:'easy',q:'Riya and I finished the project by ___.',options:['ourselves','themselves','herself','itself'],answer:0,why:'“Riya and I” corresponds to the reflexive pronoun “ourselves”.'},
-    {id:'condition1',topic:'Conditionals',difficulty:'medium',q:'If I ___ more time, I would learn another language.',options:['have','had','will have','am having'],answer:1,why:'The second conditional uses past simple in the if-clause.'},
-    {id:'modal1',topic:'Modal Verbs',difficulty:'medium',q:'You ___ wear a helmet when riding this bike.',options:['should','would','might to','can to'],answer:0,why:'“Should” is used for advice or recommendation.'},
-    {id:'real1',topic:'Real-Life English',difficulty:'easy',q:'Which is best for a polite email request?',options:['Send me the file.','Give file now.','Could you please send me the file?','You send file.'],answer:2,why:'“Could you please…” is a polite, professional request.'},
-    {id:'real2',topic:'Real-Life English',difficulty:'medium',q:'Which sentence sounds most natural in a job interview?',options:['I am good in teamwork.','I am good at teamwork.','I good at teamwork.','I am well in teamwork.'],answer:1,why:'The standard collocation is “good at”.'},
-    {id:'conversation1',topic:'Conversation',difficulty:'easy',q:'Your friend asks, “How was your day?” Which reply is natural?',options:['It was pretty good.','It is pretty good yesterday.','Was good it.','I am good day.'],answer:0,why:'“It was pretty good” is a natural past-tense response.'}
-  ];
-  let academyMode = 'hub';
-  let academyQuestions = [];
-  let academyIndex = 0;
-  let academyScore = 0;
-  let academySessionTopic = '';
-  let academySessionAnswered = false;
-  let academyLastSelection = null;
-
-  function ensureAcademyStats(){
-    if(!player.academy || typeof player.academy !== 'object') player.academy={total:0,correct:0,byTopic:{},recentMistakes:[]};
-    if(!player.academy.byTopic || typeof player.academy.byTopic !== 'object') player.academy.byTopic={};
-    if(!Array.isArray(player.academy.recentMistakes)) player.academy.recentMistakes=[];
-    return player.academy;
-  }
-  function academyAccuracy(){
-    const a=ensureAcademyStats(); return a.total ? Math.round((a.correct/a.total)*100) : null;
-  }
-  function academyTopicAccuracy(topic){
-    const a=ensureAcademyStats(); const x=a.byTopic[topic]; return x && x.total ? x.correct/x.total : null;
-  }
-  function academyWeakTopic(){
-    const a=ensureAcademyStats();
-    const known=Object.keys(a.byTopic).filter(k=>a.byTopic[k]&&a.byTopic[k].total>=2);
-    if(!known.length) return null;
-    known.sort((x,y)=>academyTopicAccuracy(x)-academyTopicAccuracy(y));
-    return known[0];
-  }
-  function academyTodayTopic(){
-    const weak=academyWeakTopic(); if(weak) return weak;
-    const cycle=['Prepositions','Phrasal Verbs','Tenses','Subject–Verb Agreement','Articles','Pronouns','Conditionals','Modal Verbs'];
-    return cycle[Math.floor(Date.now()/86400000)%cycle.length];
-  }
-  function filterAcademyQuestions(selection){
-    let arr=ACADEMY_BANK.slice();
-    if(selection.mode==='weak'){
-      const weak=academyWeakTopic();
-      arr=weak ? arr.filter(q=>q.topic===weak) : arr;
-    }else if(selection.mode==='today'){
-      const topic=academyTodayTopic(); arr=arr.filter(q=>q.topic===topic);
-      if(!arr.length) arr=ACADEMY_BANK.slice();
-    }else if(selection.difficulty){
-      arr=arr.filter(q=>q.difficulty===selection.difficulty);
-    }else if(selection.mode==='school'){
-      arr=arr.filter(q=>['Subject–Verb Agreement','Tenses','Articles','Pronouns','Conditionals'].includes(q.topic));
-    }else if(selection.mode==='real'){
-      arr=arr.filter(q=>q.topic==='Real-Life English');
-    }else if(selection.mode==='conversation'){
-      arr=arr.filter(q=>q.topic==='Conversation');
-    }else if(selection.mode==='random'){
-      arr=ACADEMY_BANK.slice();
-    }
-    arr.sort(()=>Math.random()-0.5);
-    return arr.slice(0,5);
-  }
-  function renderAcademyHub(){
-    const hub=document.getElementById('academyHub'), quiz=document.getElementById('academyQuiz'), finish=document.getElementById('academyFinish');
-    hub.classList.remove('hidden'); quiz.classList.remove('visible'); finish.classList.remove('visible');
-    const a=ensureAcademyStats();
-    document.getElementById('academyLevelStat').textContent=Math.max(1,Number(player.dokiLevel)||1);
-    document.getElementById('academyXpStat').textContent=Math.max(0,Number(player.xp)||0);
-    document.getElementById('academyAccuracyStat').textContent=academyAccuracy()===null?'—':academyAccuracy()+'%';
-    const wrap=document.getElementById('academyOptions'); wrap.innerHTML='';
-    ACADEMY_TOPICS.forEach(function(item){
-      const b=document.createElement('button'); b.type='button'; b.className='academy-option';
-      b.innerHTML='<span class="academy-option-title">'+item.icon+' '+item.title+'</span><span class="academy-option-note">'+item.note+'</span>';
-      b.addEventListener('click',function(){ startAcademyQuiz(item); });
-      wrap.appendChild(b);
-    });
-  }
-  function openAcademy(){
-    const modal=document.getElementById('academyModal'); modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false');
-    renderAcademyHub();
-  }
-  function closeAcademy(){ const modal=document.getElementById('academyModal'); modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true'); }
-  function startAcademyQuiz(selection){
-    academyLastSelection=selection; academyQuestions=filterAcademyQuestions(selection); academyIndex=0; academyScore=0; academyMode='quiz'; academySessionAnswered=false;
-    academySessionTopic=selection.mode==='today'?academyTodayTopic():(selection.mode==='weak'?(academyWeakTopic()||'Mixed Grammar'):selection.title);
-    const hub=document.getElementById('academyHub'), quiz=document.getElementById('academyQuiz'), finish=document.getElementById('academyFinish');
-    hub.classList.add('hidden'); finish.classList.remove('visible'); quiz.classList.add('visible');
-    renderAcademyQuestion();
-  }
-  function renderAcademyQuestion(){
-    const q=academyQuestions[academyIndex]; if(!q){ finishAcademyQuiz(); return; }
-    academySessionAnswered=false;
-    document.getElementById('academyQuizLabel').textContent=academySessionTopic;
-    document.getElementById('academyQuizCounter').textContent=(academyIndex+1)+'/'+academyQuestions.length;
-    document.getElementById('academyProgressFill').style.width=((academyIndex/academyQuestions.length)*100)+'%';
-    document.getElementById('academyQuestionKicker').textContent=q.topic+' · '+q.difficulty;
-    document.getElementById('academyQuestion').textContent=q.q;
-    const answers=document.getElementById('academyAnswers'); answers.innerHTML='';
-    document.getElementById('academyResult').classList.remove('visible');
-    document.getElementById('academyNextBtn').disabled=true;
-    document.getElementById('academyGeminiLoading').classList.remove('visible');
-    q.options.forEach(function(opt,i){
-      const b=document.createElement('button'); b.type='button'; b.className='academy-answer'; b.textContent=String.fromCharCode(65+i)+'. '+opt;
-      b.addEventListener('click',function(){ answerAcademyQuestion(i); });
-      answers.appendChild(b);
-    });
-  }
-  function answerAcademyQuestion(choice){
-    if(academySessionAnswered) return; academySessionAnswered=true;
-    const q=academyQuestions[academyIndex], correct=choice===q.answer;
-    if(correct) academyScore++;
-    const a=ensureAcademyStats(); a.total++; if(correct) a.correct++;
-    const t=a.byTopic[q.topic]||(a.byTopic[q.topic]={total:0,correct:0}); t.total++; if(correct) t.correct++;
-    if(!correct){ a.recentMistakes.unshift(q.topic); a.recentMistakes=a.recentMistakes.slice(0,20); }
-    const earned=correct?10:2; player.xp=(Number(player.xp)||0)+earned; if(correct) player.pondPoints=(Number(player.pondPoints)||0)+1;
-    syncAvailableAchievements(); savePlayer();
-    document.querySelectorAll('#academyAnswers .academy-answer').forEach(function(b,i){ b.disabled=true; if(i===q.answer)b.classList.add('correct'); if(i===choice&&!correct)b.classList.add('wrong'); });
-    document.getElementById('academyResultTitle').textContent=correct?'✅ Correct — +'+earned+' XP':'❌ Not quite — +'+earned+' XP for the attempt';
-    document.getElementById('academyResultText').textContent=q.why;
-    document.getElementById('academyResult').classList.add('visible');
-    document.getElementById('academyNextBtn').disabled=false;
-    maybeGetAcademyGeminiCommentary(q,choice,correct);
-  }
-  async function maybeGetAcademyGeminiCommentary(q,choice,correct){
-    const commentary=document.getElementById('academyCommentary');
-    const loader=document.getElementById('academyGeminiLoading');
-    commentary.textContent=correct?'Quack. Correct. The pond approves.':'Close, but nope. The pond has filed an objection.';
-    try{
-      const model=await initDokiChatGemini(); if(!model) return;
-      loader.classList.add('visible');
-      const prompt='You are Doki Duck, a playful slightly sarcastic grammar commentator. Give one short helpful explanation/commentary (max 45 words) for this quiz result. Do not change the answer key. Question: '+q.q+' Options: '+JSON.stringify(q.options)+' Correct option: '+q.options[q.answer]+' User chose: '+q.options[choice]+' Result: '+(correct?'correct':'incorrect')+'. Add a small duck/pond joke naturally.';
-      const result=await dokiWithTimeout(model.generateContent(prompt),8000,'Academy Gemini commentary');
-      const text=result && result.response && typeof result.response.text==='function'?String(result.response.text()).trim():'';
-      if(text) commentary.textContent=text;
-    }catch(error){
-      console.warn('Doki Duck AI: Academy commentary unavailable; local commentary remains active.',error);
-    }finally{ loader.classList.remove('visible'); }
-  }
-  function finishAcademyQuiz(){
-    const quiz=document.getElementById('academyQuiz'), finish=document.getElementById('academyFinish'); quiz.classList.remove('visible'); finish.classList.add('visible');
-    document.getElementById('academyProgressFill').style.width='100%';
-    const total=academyQuestions.length; const pct=total?Math.round((academyScore/total)*100):0;
-    document.getElementById('academyFinishScore').textContent=academyScore+'/'+total;
-    document.getElementById('academyFinishNote').textContent='Score '+pct+'%. '+(pct>=80?'The pond is impressed. Try a harder pond next.':pct>=50?'Solid swim. A little more practice and you will level up.':'No panic. Mistake Revenge exists for a reason.');
-  }
-  document.getElementById('academyClose').addEventListener('click',closeAcademy);
-  document.getElementById('academyQuitBtn').addEventListener('click',renderAcademyHub);
-  document.getElementById('academyNextBtn').addEventListener('click',function(){ academyIndex++; renderAcademyQuestion(); });
-  document.getElementById('academyFinishBack').addEventListener('click',renderAcademyHub);
-  document.getElementById('academyRetryBtn').addEventListener('click',function(){ if(academyLastSelection) startAcademyQuiz(academyLastSelection); });
 
   function setModalOpen(modal, open){
     if(!modal) return;
@@ -2726,19 +2555,12 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     const contextBefore=getDokiContext();
     addDokiContext(raw);
 
-    // Clear the input BEFORE setting the scan state. The input handler normally
-    // clears the meter when the field becomes empty; doing it in the opposite
-    // order was silently erasing the grammar result in the previous build.
+    // Stage C: normal Doki Chat is now independent from Grammar Check.
+    // No Harper scan, grammar verifier, grammar UI, or grammar status is triggered here.
     inputEl.value = '';
-    meterEl.innerHTML = '<span class="grammar-scan-status">Grammar scan…</span>';
-
-    // Pass 3B adds local correction/explanation/learning UI. Pond Points are still not awarded here; that belongs to Pass 3C.
-    const thisGrammarScan=++grammarScanToken;
-    void checkGrammarForStage3A(raw, contextBefore).then(function(lints){ showGrammarStage3BResult(lints, raw, thisGrammarScan); });
+    meterEl.innerHTML = '&nbsp;';
 
     // Separate Gemini Doki persona; local quack remains the non-Gemini fallback.
-    // Streaming makes the first visible reply arrive sooner, while the token
-    // prevents a late stream from an older message from overwriting a newer one.
     const thisChatToken = ++chatResponseToken;
     const streamUi = createDokiStreamingRow();
     void generateDokiChatReply(raw, contextBefore, count, streamUi).then(function(reply){
@@ -2753,6 +2575,54 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       scrollToBottom();
     });
   }
+
+  async function runDedicatedGrammarCheck(){
+    if(dokiRoute !== 'grammar' || !grammarWorkspaceInput || !grammarWorkspaceBtn) return;
+    const raw = String(grammarWorkspaceInput.value || '').trim();
+    if(!raw) return;
+
+    grammarWorkspaceBtn.disabled = true;
+    if(grammarWorkspaceEmpty) grammarWorkspaceEmpty.style.display = 'none';
+    hideGrammarLearningPanel();
+    if(grammarStatusEl){
+      grammarStatusEl.className='grammar-status scan';
+      grammarStatusEl.textContent='Doki is checking your writing…';
+    }
+
+    const thisGrammarScan = ++grammarScanToken;
+    try{
+      const lints = await checkGrammarForStage3A(raw, []);
+      showGrammarStage3BResult(lints, raw, thisGrammarScan);
+    }catch(error){
+      console.warn('Doki Duck AI: dedicated Grammar Check failed.', error);
+      if(grammarStatusEl){
+        grammarStatusEl.className='grammar-status offline';
+        grammarStatusEl.textContent='⚠ Grammar check could not be completed.';
+      }
+      hideGrammarLearningPanel();
+    }finally{
+      grammarWorkspaceBtn.disabled = false;
+    }
+  }
+
+  if(grammarWorkspaceBtn) grammarWorkspaceBtn.addEventListener('click', runDedicatedGrammarCheck);
+  if(grammarWorkspaceInput) grammarWorkspaceInput.addEventListener('keydown', function(e){
+    if((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+      e.preventDefault();
+      runDedicatedGrammarCheck();
+    }
+  });
+  if(grammarWorkspaceClear) grammarWorkspaceClear.addEventListener('click', function(){
+    if(grammarWorkspaceInput) grammarWorkspaceInput.value = '';
+    if(grammarStatusEl){
+      grammarStatusEl.className='grammar-status';
+      grammarStatusEl.textContent='';
+    }
+    hideGrammarLearningPanel();
+    if(grammarWorkspaceEmpty) grammarWorkspaceEmpty.style.display = 'block';
+    if(grammarWorkspaceInput) grammarWorkspaceInput.focus();
+  });
+  if(dokiRouteBackGrammar) dokiRouteBackGrammar.addEventListener('click', function(){ showDokiRoute('chat'); });
 
   sendBtn.addEventListener('click', handleSend);
   const geminiDiagnosticBtn = document.getElementById('geminiDiagnosticBtn');
@@ -2780,6 +2650,11 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     incognito = on;
     hideGrammarLearningPanel();
     grammarScanToken++;
+    if(grammarStatusEl){
+      grammarStatusEl.className='grammar-status';
+      grammarStatusEl.textContent='';
+    }
+    if(grammarWorkspaceInput && on && dokiRoute === 'grammar') grammarWorkspaceInput.value = '';
     clearDokiContext();
     phone.classList.toggle('incognito', on);
     inputEl.type = on ? 'password' : 'text';
@@ -2821,6 +2696,34 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     if(dokiMenuOpen) updateDokiMenuSummary();
   }
 
+  let dokiRoute = 'chat';
+
+  function showDokiRoute(route){
+    const definitions = {
+      chat: { nonChat:false },
+      grammar: { nonChat:true },
+      academy: { nonChat:true }
+    };
+    const view = definitions[route] || definitions.chat;
+    dokiRoute = definitions[route] ? route : 'chat';
+
+    phone.classList.toggle('route-nonchat', !!view.nonChat);
+    phone.classList.toggle('route-grammar', dokiRoute === 'grammar');
+    phone.classList.toggle('route-academy', dokiRoute === 'academy');
+
+    if(dokiRoutePanel){
+      dokiRoutePanel.setAttribute('aria-hidden', view.nonChat ? 'false' : 'true');
+    }
+
+    if(dokiRoute === 'grammar'){
+      if(grammarWorkspaceInput) grammarWorkspaceInput.focus();
+      if(grammarWorkspaceEmpty) grammarWorkspaceEmpty.style.display = 'block';
+    }else if(dokiRoute === 'chat'){
+      scrollToBottom();
+      if(inputEl) inputEl.focus();
+    }
+  }
+
   menuTrigger.addEventListener('click', function(){ setDokiMenuOpen(!dokiMenuOpen); });
   dokiMenuClose.addEventListener('click', function(){ setDokiMenuOpen(false); });
   dokiMenuBackdrop.addEventListener('click', function(){ setDokiMenuOpen(false); });
@@ -2840,9 +2743,19 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     setDokiMenuOpen(false);
     openLeaderboard();
   });
-  if(menuChatBtn) menuChatBtn.addEventListener('click', function(){ setDokiMenuOpen(false); });
-  if(menuGrammarBtn) menuGrammarBtn.addEventListener('click', function(){ setDokiMenuOpen(false); document.getElementById('grammarLearningPanel').scrollIntoView({behavior:'smooth',block:'center'}); });
-  if(menuAcademyBtn) menuAcademyBtn.addEventListener('click', function(){ setDokiMenuOpen(false); openAcademy(); });
+  menuChatBtn.addEventListener('click', function(){
+    setDokiMenuOpen(false);
+    showDokiRoute('chat');
+  });
+  menuGrammarBtn.addEventListener('click', function(){
+    setDokiMenuOpen(false);
+    showDokiRoute('grammar');
+  });
+  menuAcademyBtn.addEventListener('click', function(){
+    setDokiMenuOpen(false);
+    showDokiRoute('academy');
+  });
+  dokiRouteBack.addEventListener('click', function(){ showDokiRoute('chat'); });
 
 
   profileModalClose.addEventListener('click', function(){ setModalOpen(profileModal, false); });
@@ -2860,6 +2773,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       closeLeaderboard();
     }
   });
+
+  showDokiRoute('chat');
 
 })();
 </script>
