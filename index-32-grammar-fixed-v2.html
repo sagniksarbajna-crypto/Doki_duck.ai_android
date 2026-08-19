@@ -1,0 +1,2301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Doki Duck AI</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#707C5C" id="themeColorMeta">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --yellow: #F5C242;
+    --yellow-deep: #E8AF23;
+    --olive: #707C5C;
+    --olive-dark: #545E44;
+    --cream: #F8F3E7;
+    --ink: #241F18;
+    --beak: #E29227;
+    --beak-dark: #C97B1A;
+
+    --toolbar-bg: #E4E4E4;
+    --toolbar-border: #c9c9c9;
+    --addr-bg: #ffffff;
+    --addr-text: #4a4a4a;
+    --app-bg1: #FBDA7C;
+    --app-bg2: #F5C242;
+    --app-bg3: #E8AF23;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{
+    margin:0;
+    height:100%;
+    height:100dvh;
+    background:#ddd;
+    font-family:'Nunito', system-ui, sans-serif;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    overflow:hidden;
+  }
+  .phone{
+    width:100%;
+    height:100%;
+    height:100dvh;
+    max-width:100%;
+    background:
+      radial-gradient(circle at 50% -10%, var(--app-bg1) 0%, var(--app-bg2) 55%, var(--app-bg3) 100%);
+    border:none;
+    border-radius:0;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    box-shadow:none;
+    position:relative;
+    transition: background 0.5s ease;
+  }
+  .phone.incognito{
+    background: radial-gradient(circle at 50% -10%, #4b4a58 0%, #2f2e3a 55%, #1c1b24 100%);
+  }
+
+  /* ---- fake browser toolbar ---- */
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 12px;
+    background:var(--toolbar-bg);
+    border-bottom:1px solid var(--toolbar-border);
+    transition: background 0.5s ease, border-color 0.5s ease;
+  }
+  .phone.incognito .toolbar{
+    background:#2b2a33;
+    border-color:#454353;
+  }
+  .tabdot{
+    width:9px;height:9px;border-radius:50%;
+    background:#c7c7c7;
+    flex-shrink:0;
+  }
+  .phone.incognito .tabdot{ background:#5b596a; }
+  .addr-pill{
+    flex:1;
+    background:var(--addr-bg);
+    border-radius:999px;
+    padding:7px 12px;
+    font-size:0.74rem;
+    color:var(--addr-text);
+    display:flex;
+    align-items:center;
+    gap:6px;
+    min-width:0;
+    transition: background 0.5s ease, color 0.5s ease;
+  }
+  .phone.incognito .addr-pill{ background:#3c3b47; color:#c9c6d6; }
+  .addr-pill .lock{ font-size:0.7rem; flex-shrink:0; }
+  .addr-pill span.url{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .incog-btn{
+    width:32px;height:32px;
+    border-radius:50%;
+    border:none;
+    background:transparent;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    transition: background 0.2s ease;
+  }
+  .incog-btn:hover{ background:rgba(0,0,0,0.06); }
+  .phone.incognito .incog-btn{ background:rgba(255,255,255,0.12); }
+  .phone.incognito .incog-btn:hover{ background:rgba(255,255,255,0.2); }
+  .incog-btn svg{ width:19px; height:19px; }
+  .incog-btn .glyph-fill{ fill:#5f5f5f; transition: fill 0.4s ease; }
+  .phone.incognito .incog-btn .glyph-fill{ fill:#efeef5; }
+
+  /* ---- header ---- */
+  .header{
+    background:var(--olive);
+    color:var(--cream);
+    padding:14px 18px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    border-bottom:3px solid var(--ink);
+    transition: background 0.5s ease;
+  }
+  .phone.incognito .header{ background:#232230; }
+
+  .avatar-wrap{
+    position:relative;
+    width:52px;
+    height:52px;
+    flex-shrink:0;
+  }
+  .avatar{
+    width:52px;
+    height:52px;
+    border-radius:50%;
+    border:3px solid var(--ink);
+    overflow:hidden;
+    background:var(--olive-dark);
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+
+  .sunglasses{
+    position:absolute;
+    top:38%;
+    left:16%;
+    width:68%;
+    height:20%;
+    pointer-events:none;
+    opacity:0;
+    transform:scale(0.4) translateY(-4px);
+    transition: opacity 0.45s cubic-bezier(.2,.9,.3,1.3), transform 0.45s cubic-bezier(.2,.9,.3,1.3);
+  }
+  .phone.incognito .sunglasses{
+    opacity:1;
+    transform:scale(1) translateY(0);
+  }
+  .sunglasses svg{ width:100%; height:100%; display:block; overflow:visible; }
+
+  .header-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .header-name{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:800;
+    font-size:1.15rem;
+    letter-spacing:0.2px;
+  }
+  .header-status{
+    font-size:0.76rem;
+    opacity:0.88;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    transition: color 0.3s ease;
+  }
+  .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:#8FE38A;
+    box-shadow:0 0 0 2px rgba(143,227,138,0.25);
+    transition: background 0.3s ease;
+  }
+  .phone.incognito .dot{ background:#b39dff; box-shadow:0 0 0 2px rgba(179,157,255,0.25); }
+
+  /* ---- messages ---- */
+  .messages{
+    flex:1;
+    overflow-y:auto;
+    padding:18px 16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    background:var(--cream);
+    transition: background 0.5s ease;
+  }
+  .phone.incognito .messages{ background:#232230; }
+
+  .row{display:flex; gap:8px; align-items:flex-end;}
+  .row.user{justify-content:flex-end;}
+  .row.bot{justify-content:flex-start;}
+  .bubble{
+    max-width:74%;
+    padding:10px 14px;
+    border-radius:16px;
+    font-size:0.96rem;
+    line-height:1.4;
+    border:2px solid var(--ink);
+    word-wrap:break-word;
+    transition: background 0.4s ease, border-color 0.4s ease, color 0.4s ease;
+  }
+  .row.user .bubble{
+    background:var(--yellow);
+    border-bottom-right-radius:4px;
+  }
+  .row.bot .bubble{
+    background:#fff;
+    border-bottom-left-radius:4px;
+  }
+  .phone.incognito .row.user .bubble{
+    background:#3c3b47; color:#d8d5e6; border-color:#5b596a; letter-spacing:2px;
+  }
+  .phone.incognito .row.bot .bubble{
+    background:#2f2e3a; color:#eae7f5; border-color:#5b596a;
+  }
+  .row.bot .bubble.denied{
+    background:#3a1f22 !important;
+    color:#f3d6d6 !important;
+    border-color:#7a3232 !important;
+  }
+
+  .bot-mini{
+    width:26px;height:26px;border-radius:50%;
+    border:2px solid var(--ink);
+    overflow:hidden;flex-shrink:0;
+    position:relative;
+  }
+  .bot-mini img{width:100%;height:100%;object-fit:cover;display:block;}
+  .bot-mini .sunglasses{ top:36%; left:14%; width:72%; height:22%; }
+
+  .quack-reply{font-weight:700; letter-spacing:0.3px;}
+
+  .system-note{
+    align-self:center;
+    font-size:0.72rem;
+    font-family:'JetBrains Mono', monospace;
+    color:var(--olive-dark);
+    background:#EFE7D2;
+    border:1px dashed var(--olive);
+    padding:5px 10px;
+    border-radius:10px;
+    text-align:center;
+    max-width:90%;
+    transition: all 0.4s ease;
+  }
+  .phone.incognito .system-note{
+    color:#c9c1ff; background:#2c2a3d; border-color:#57508a;
+  }
+
+  /* ---- meter ---- */
+  .meter{
+    padding:6px 16px 0;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    color:var(--olive-dark);
+    min-height:18px;
+    background:var(--cream);
+    transition: background 0.5s ease, color 0.4s ease;
+  }
+  .meter b{color:var(--beak-dark);}
+  .phone.incognito .meter{ background:#232230; color:#8a84a8; }
+  .phone.incognito .meter b{ color:#b39dff; }
+  .grammar-status{
+    min-height:22px;
+    padding:3px 16px 0;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    color:var(--olive-dark);
+    background:var(--cream);
+    transition:color .25s ease, background .25s ease;
+  }
+  .grammar-status.scan{color:var(--olive-dark)}
+  .grammar-status.clean{color:#4f7042}
+  .grammar-status.issue{color:#9a5b18}
+  .grammar-status.offline{color:#8b4d4d}
+  .phone.incognito .grammar-status{background:#232230;color:#8a84a8}
+  .phone.incognito .grammar-status.clean{color:#9ac78a}
+  .phone.incognito .grammar-status.issue{color:#e0b56e}
+  .phone.incognito .grammar-status.offline{color:#d08f8f}
+
+  /* PASS 3B: dedicated grammar learning panel */
+  .grammar-learning-panel{display:none;flex:0 1 auto;position:relative;z-index:20;min-height:0;max-height:min(42dvh,360px);margin:0 12px 7px;background:#fffdf6;border:2px solid var(--ink);border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.10);overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;}
+  .grammar-learning-panel.visible{display:flex;flex-direction:column;}
+  .grammar-learning-head{position:sticky;top:0;z-index:2;padding:9px 12px;background:var(--yellow);border-bottom:1px solid #c99f28;font-weight:900;font-size:13px;flex:0 0 auto;}
+  .grammar-learning-body{padding:10px 11px 12px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;scroll-behavior:smooth;min-height:0;}
+  .grammar-learning-panel .grammar-card{margin:0;max-width:none;border:0;box-shadow:none;background:transparent;animation:none;overflow:visible;}
+  .grammar-learning-panel .grammar-card-head{display:none;}
+  .grammar-learning-panel .grammar-card-body{padding:0;}
+  .phone.incognito .grammar-learning-panel{background:#2f2e3a;border-color:#5b596a;}
+  .phone.incognito .grammar-learning-head{background:#57508a;border-color:#7770a8;color:#f0eefc;}
+  @media(max-width:430px){.grammar-learning-panel{max-height:40dvh;margin-left:9px;margin-right:9px;}}
+
+  /* ---- input ---- */
+  .inputbar{
+    display:flex;
+    gap:8px;
+    padding:12px 14px 16px;
+    background:var(--cream);
+    border-top:3px solid var(--ink);
+    transition: background 0.5s ease, border-color 0.5s ease;
+  }
+  .phone.incognito .inputbar{ background:#232230; border-color:#454353; }
+
+  .inputbar input{
+    flex:1;
+    border:2px solid var(--ink);
+    border-radius:14px;
+    padding:11px 14px;
+    font-size:0.95rem;
+    font-family:'Nunito', sans-serif;
+    outline:none;
+    background:#fff;
+    transition: background 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+  }
+  .inputbar input:focus{
+    box-shadow:0 0 0 3px rgba(226,146,39,0.35);
+  }
+  .phone.incognito .inputbar input{
+    background:#141319; color:#e6e3f2; border-color:#5b596a;
+  }
+  .phone.incognito .inputbar input:focus{
+    box-shadow:0 0 0 3px rgba(179,157,255,0.3);
+  }
+  .phone.incognito .inputbar input::placeholder{ color:#6b6784; }
+
+  .send-btn{
+    width:46px;height:46px;
+    border-radius:50%;
+    border:2px solid var(--ink);
+    background:var(--beak);
+    color:var(--ink);
+    font-size:1.15rem;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    transition:transform 0.12s ease, background 0.3s ease, border-color 0.3s ease;
+  }
+  .send-btn:hover{background:var(--beak-dark); transform:translateY(-1px);}
+  .send-btn:active{transform:translateY(1px) scale(0.96);}
+  .phone.incognito .send-btn{ background:#57508a; border-color:#8a84c9; color:#f0eefc; }
+  .phone.incognito .send-btn:hover{ background:#453f70; }
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:#D9CDA9; border-radius:8px;}
+  .phone.incognito ::-webkit-scrollbar-thumb{ background:#454358; }
+
+
+  /* PASS 2B: shared leaderboard + compact player profile */
+  .header-tools{margin-left:auto;display:flex;align-items:center;gap:7px;flex-shrink:0}
+  .menu-trigger{width:40px;height:40px;border:2px solid #222;border-radius:12px;background:#eef1e2;color:#222;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;position:relative;box-shadow:0 3px 0 rgba(34,34,34,.14);transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+  .menu-trigger:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(34,34,34,.14)}
+  .menu-trigger-lines{width:19px;display:flex;flex-direction:column;gap:4px}
+  .menu-trigger-lines span{display:block;height:2.5px;border-radius:4px;background:currentColor;transition:transform .22s ease,opacity .18s ease}
+  .menu-trigger[aria-expanded="true"] .menu-trigger-lines span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+  .menu-trigger[aria-expanded="true"] .menu-trigger-lines span:nth-child(2){opacity:0}
+  .menu-trigger[aria-expanded="true"] .menu-trigger-lines span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+  .phone.incognito .menu-trigger{background:#34323f;color:#eee;border-color:#66627c}
+  .doki-menu-backdrop{position:fixed;inset:0;z-index:8800;background:rgba(15,17,13,.48);backdrop-filter:blur(3px);opacity:1;transition:opacity .22s ease}
+  .doki-menu-backdrop.hidden{display:none}
+  .doki-menu-panel{position:fixed;top:0;right:0;bottom:0;width:min(86vw,360px);z-index:8900;background:#f7f2e7;color:#222;border-left:2px solid #222;box-shadow:-18px 0 50px rgba(0,0,0,.25);transform:translateX(100%);transition:transform .26s cubic-bezier(.22,.8,.25,1);display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);overflow:hidden}
+  .doki-menu-panel.open{transform:translateX(0)}
+  .doki-menu-head{padding:18px 18px 14px;background:#dfe7c9;border-bottom:1px solid #bbb;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .doki-menu-title{font-family:'Baloo 2',sans-serif;font-size:1.25rem;font-weight:900}
+  .doki-menu-subtitle{font-size:10px;opacity:.65;margin-top:2px}
+  .doki-menu-close{width:36px;height:36px;border:2px solid #222;border-radius:50%;background:transparent;font-size:20px;cursor:pointer}
+  .doki-menu-profile{margin:12px 14px 8px;padding:12px;border:1.5px solid #c8c0b1;border-radius:15px;background:#fff;display:flex;align-items:center;gap:10px}
+  .doki-menu-avatar{width:42px;height:42px;border-radius:13px;background:#eef1e2;border:1.5px solid #222;display:grid;place-items:center;font-size:22px;flex:0 0 auto}
+  .doki-menu-profile-name{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .doki-menu-profile-meta{font-size:10px;opacity:.65;margin-top:2px}
+  .doki-menu-list{padding:6px 10px 14px;overflow:auto}
+  .doki-menu-item{width:100%;border:0;background:transparent;color:inherit;border-radius:13px;display:flex;align-items:center;gap:12px;padding:13px 10px;text-align:left;cursor:pointer;font:inherit;transition:background .15s ease,transform .15s ease}
+  .doki-menu-item:active{transform:scale(.985);background:#e9eddc}
+  .doki-menu-icon{width:34px;height:34px;border-radius:10px;background:#eef1e2;border:1px solid #c5cbb4;display:grid;place-items:center;font-size:17px;flex:0 0 auto}
+  .doki-menu-item-copy{min-width:0;flex:1}
+  .doki-menu-item-title{font-weight:900;font-size:13px}
+  .doki-menu-item-note{font-size:10px;opacity:.62;margin-top:2px}
+  .doki-menu-arrow{font-size:20px;opacity:.45}
+  .phone.incognito .doki-menu-panel{background:#24232c;color:#eee;border-color:#66627c}
+  .phone.incognito .doki-menu-head{background:#34323f;border-color:#555265}
+  .phone.incognito .doki-menu-profile,.phone.incognito .doki-menu-icon{background:#302f39;border-color:#66627c}
+  .phone.incognito .doki-menu-item:active{background:#34323f}
+  @media(max-width:430px){.menu-trigger{width:38px;height:38px}.doki-menu-panel{width:min(90vw,340px)}}
+  .modal-backdrop{position:fixed;inset:0;z-index:9000;background:rgba(15,17,13,.68);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:14px}
+  .modal-backdrop.hidden{display:none!important}
+  .data-modal{width:min(100%,520px);max-height:calc(100dvh - 28px);background:#f7f2e7;color:#222;border:2px solid #222;border-radius:22px;box-shadow:0 18px 60px rgba(0,0,0,.38);overflow:hidden;display:flex;flex-direction:column}
+  .data-modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;background:#dfe7c9;border-bottom:1px solid #bbb}
+  .data-modal-title{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.18rem}
+  .modal-close{width:34px;height:34px;border:2px solid #222;border-radius:50%;background:transparent;font-size:18px;cursor:pointer}
+  .data-modal-body{padding:14px 16px;overflow:auto}
+  .profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:14px}
+  .stat-card{background:#fff;border:1.5px solid #c8c0b1;border-radius:13px;padding:10px}
+  .stat-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;opacity:.65;font-weight:800}
+  .stat-value{font-size:17px;font-weight:900;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .leaderboard-list{display:flex;flex-direction:column;gap:7px}
+  .leader-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto auto;align-items:center;gap:8px;background:#fff;border:1.5px solid #d0c7b8;border-radius:12px;padding:9px 10px}
+  .leader-row.me{border-color:#707c5c;box-shadow:0 0 0 2px rgba(112,124,92,.14)}
+  .leader-rank{font-weight:900;text-align:center}
+  .leader-name{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .leader-xp,.leader-level,.leader-trophies{font-family:'JetBrains Mono',monospace;font-size:10px;white-space:nowrap}
+  .leader-empty,.leader-loading,.leader-error{padding:14px 10px;text-align:center;font-size:12px;opacity:.75}
+  .modal-note{font-size:11px;line-height:1.4;opacity:.7;margin:0 0 12px}
+  @media(max-width:430px){
+    .header{padding-right:10px}
+    .header-tools{gap:5px}
+    .profile-chip{max-width:88px;padding:6px 7px}
+    .leaderboard-btn{width:32px;height:32px;font-size:15px}
+    .data-modal{border-radius:18px}
+    .leader-row{grid-template-columns:30px minmax(0,1fr) auto}
+    .leader-level{display:none}
+  }
+
+  /* PASS 2B: trophy room / achievement UI */
+  .achievement-launch{
+    width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    border:1.5px solid #c8c0b1;background:#fff;border-radius:15px;padding:12px 13px;
+    cursor:pointer;text-align:left;color:#222;
+    transition:transform .16s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease;
+  }
+  .achievement-launch:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(0,0,0,.08);border-color:#707c5c}
+  .achievement-launch:active{transform:translateY(1px) scale(.99)}
+  .achievement-launch-copy{min-width:0}
+  .achievement-launch-title{font-weight:900;font-size:13px}
+  .achievement-launch-note{font-size:10px;opacity:.65;margin-top:2px}
+  .achievement-launch-arrow{font-size:20px;font-weight:900;flex-shrink:0}
+  .trophy-room{display:flex;flex-direction:column;gap:11px}
+  .trophy-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:#eef1e2;border:1px solid #c8d0ad}
+  .trophy-summary strong{font-size:13px}
+  .trophy-summary span{font-size:11px;opacity:.72}
+  .achievement-list{display:flex;flex-direction:column;gap:9px}
+  .achievement-card{display:grid;grid-template-columns:54px minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px;border:1.5px solid #d0c7b8;border-radius:15px;background:#fff;position:relative;overflow:hidden;transition:transform .18s ease,box-shadow .2s ease,border-color .2s ease}
+  .achievement-card.earned{border-color:#b7bf92;background:linear-gradient(135deg,#fff,#f4f7e8)}
+  .achievement-card.locked{background:#f7f4ee;opacity:.78}
+  .achievement-card:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(0,0,0,.06)}
+  .achievement-badge{width:48px;height:48px;border-radius:15px;display:flex;align-items:center;justify-content:center;border:2px solid #222;background:#e8e2cf;position:relative;overflow:hidden}
+  .achievement-card.earned .achievement-badge{background:radial-gradient(circle at 35% 25%,#ffe58a 0%,#f5c242 52%,#d69513 100%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.35),0 5px 12px rgba(212,166,40,.23)}
+  .achievement-card.locked .achievement-badge{filter:grayscale(1);opacity:.64}
+  .achievement-badge svg{width:39px;height:39px}
+  .achievement-info{min-width:0}
+  .achievement-title{font-weight:900;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .achievement-desc{font-size:10.5px;line-height:1.35;margin-top:3px;opacity:.7}
+  .achievement-status{font-size:10px;font-weight:900;white-space:nowrap}
+  .achievement-card.earned .achievement-status{color:#5d6e45}
+  .achievement-card.locked .achievement-status{color:#8a857d}
+  .achievement-ribbon{position:absolute;right:-26px;top:7px;transform:rotate(36deg);font-size:8px;font-weight:900;padding:3px 25px;background:#707c5c;color:#fff;letter-spacing:.5px}
+  .trophy-room-intro{font-size:11px;line-height:1.45;opacity:.72;margin:0 0 2px}
+  .trophy-locked-note{font-size:10px;line-height:1.4;opacity:.62;margin:0}
+  .trophy-duck-eye{fill:#221f18}.trophy-duck-beak{fill:#e29227;stroke:#241f18;stroke-width:1.7}
+  @keyframes trophyPop{0%{transform:scale(.82) rotate(-4deg);opacity:0}55%{transform:scale(1.06) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+  .achievement-card.just-earned{animation:trophyPop .55s cubic-bezier(.2,.9,.25,1.15)}
+  @media(max-width:430px){.achievement-card{grid-template-columns:48px minmax(0,1fr) auto;padding:10px}.achievement-badge{width:42px;height:42px;border-radius:13px}.achievement-badge svg{width:34px;height:34px}}
+
+  @media (prefers-reduced-motion: reduce){
+    .send-btn, .sunglasses, .phone, .achievement-launch, .achievement-card{ transition:none; }
+    .achievement-card.just-earned{animation:none}
+  }
+
+/* PASS 1: first-launch profile + persistent local player state */
+.onboard-overlay{position:fixed;inset:0;z-index:9999;background:rgba(20,22,18,.72);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box}
+.onboard-card{width:min(100%,520px);max-height:calc(100dvh - 28px);background:#f7f2e7;color:#222;border:2px solid #222;border-radius:24px;box-shadow:0 18px 60px rgba(0,0,0,.38);overflow:hidden;display:flex;flex-direction:column}
+.onboard-head{padding:22px 22px 12px;background:#dfe7c9;border-bottom:1px solid #bbb;flex:none}
+.onboard-head h1{margin:0 0 5px;font-size:25px;line-height:1.1}.onboard-head p{margin:0;font-size:13px;opacity:.75}
+.onboard-body{padding:18px 20px;overflow:auto}.onboard-body label{display:block;font-weight:800;font-size:13px;margin:0 0 7px}.onboard-body input{width:100%;box-sizing:border-box;padding:13px 14px;border:2px solid #222;border-radius:13px;background:#fff;font-size:16px;outline:none;margin-bottom:13px}.onboard-body input:focus{box-shadow:0 0 0 3px rgba(112,124,92,.25)}
+.onboard-primary,.onboard-secondary{width:100%;border:2px solid #222;border-radius:14px;padding:13px 15px;font-weight:900;font-size:15px;cursor:pointer}.onboard-primary{background:#707c5c;color:#fff}.onboard-secondary{background:transparent;color:#222;margin-top:9px}
+.onboard-error{min-height:18px;color:#a52b2b;font-size:12px;font-weight:800;margin:-5px 0 8px}
+.terms-copy{font-size:12px;line-height:1.55}.terms-copy h2{font-size:18px;margin:0 0 8px}.terms-copy h3{font-size:13px;margin:16px 0 5px}.terms-copy p{margin:7px 0}.terms-copy ul{padding-left:18px;margin:6px 0}.terms-box{max-height:calc(100dvh - 250px);overflow:auto;border:1px solid #c9c2b4;border-radius:14px;background:#fff;padding:15px}.onboard-hidden{display:none!important}
+.profile-chip{position:absolute;right:10px;top:62px;font-size:10px;font-weight:800;background:#eef1e2;border:1px solid #222;border-radius:10px;padding:4px 7px;z-index:3;max-width:45%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:430px){.onboard-card{border-radius:20px}.onboard-head{padding:18px}.onboard-body{padding:15px}.terms-box{max-height:calc(100dvh - 235px)}}
+
+  /* PASS 3B: Doki Grammar Learning UI */
+  .grammar-card{margin:2px 0 4px 34px;max-width:calc(100% - 42px);background:#fff;border:2px solid var(--ink);border-radius:18px;box-shadow:0 8px 20px rgba(0,0,0,.08);overflow:hidden;animation:grammarCardIn .35s cubic-bezier(.2,.9,.3,1.1)}
+  .grammar-card-head{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#eef1e2;border-bottom:1px solid #c8d0ad}
+  .grammar-badge{font-size:18px;line-height:1}
+  .grammar-card-title{font-weight:900;font-size:13px}
+  .grammar-card-body{padding:12px}
+  .grammar-original{font-size:11px;color:#7b3028;margin-bottom:7px}
+  .grammar-original code{font-family:'JetBrains Mono',monospace;background:#f8e8e5;padding:2px 5px;border-radius:6px}
+  .grammar-correction{padding:9px 10px;border-radius:12px;background:#f4f7e8;border:1px solid #c8d0ad;margin:7px 0 9px}
+  .grammar-correction-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:900;opacity:.65}
+  .grammar-correction-text{font-weight:900;font-size:14px;margin-top:3px;line-height:1.45}
+  .grammar-explain{font-size:12px;line-height:1.45;color:#3f3a33}
+  .grammar-rule{display:inline-block;margin-top:8px;padding:4px 7px;border-radius:999px;background:#efe7d2;border:1px dashed #707c5c;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.45px;color:#545e44}
+  .grammar-practice{margin-top:11px;padding-top:10px;border-top:1px dashed #cbc3b5}
+  .grammar-practice-label{font-size:11px;font-weight:900;margin-bottom:6px}
+  .grammar-practice-row{display:flex;gap:7px}
+  .grammar-practice-input{flex:1;min-width:0;border:2px solid #222;border-radius:11px;padding:9px 10px;font-size:13px;font-family:'Nunito',sans-serif;outline:none;background:#fff}
+  .grammar-practice-input:focus{box-shadow:0 0 0 3px rgba(112,124,92,.22)}
+  .grammar-practice-btn{border:2px solid #222;border-radius:11px;padding:9px 11px;background:var(--olive);color:#fff;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap}
+  .grammar-practice-btn:active{transform:translateY(1px)}
+  .grammar-practice-result{font-size:11px;font-weight:900;margin-top:7px;min-height:15px}
+  .grammar-practice-result.good{color:#4f7042}
+  .grammar-practice-result.bad{color:#9a5b18}
+  .grammar-feedback{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:10px;opacity:.72}
+  .grammar-feedback button{border:1px solid #c8c0b1;background:#faf8f2;border-radius:9px;padding:5px 8px;font-size:11px;cursor:pointer}
+  .grammar-feedback button:active{transform:translateY(1px)}
+  .grammar-card.multi .grammar-correction-text{font-size:12px}
+  .phone.incognito .grammar-card{background:#2f2e3a;color:#eae7f5;border-color:#5b596a}
+  .phone.incognito .grammar-card-head{background:#34323f;border-color:#4d4a60}
+  .phone.incognito .grammar-original{color:#e1a7a7}
+  .phone.incognito .grammar-original code{background:#432d32}
+  .phone.incognito .grammar-correction{background:#343a32;border-color:#6b7856}
+  .phone.incognito .grammar-explain{color:#e4e1ea}
+  .phone.incognito .grammar-rule{background:#3a3847;border-color:#7d76a9;color:#c9c1ff}
+  .phone.incognito .grammar-practice-input{background:#141319;color:#e6e3f2;border-color:#5b596a}
+  .phone.incognito .grammar-practice-btn{background:#57508a;border-color:#8a84c9}
+  .phone.incognito .grammar-feedback button{background:#3c3b47;color:#eae7f5;border-color:#5b596a}
+  @keyframes grammarCardIn{0%{opacity:0;transform:translateY(8px) scale(.985)}100%{opacity:1;transform:none}}
+  @media(max-width:430px){.grammar-card{margin-left:30px;max-width:calc(100% - 34px)}.grammar-practice-row{flex-direction:column}.grammar-practice-btn{width:100%}}
+
+</style>
+</head>
+<body>
+
+<div class="onboard-overlay" id="onboardOverlay">
+  <div class="onboard-card" role="dialog" aria-modal="true" aria-labelledby="onboardTitle">
+    <div class="onboard-head">
+      <h1 id="onboardTitle">Welcome to Doki Duck AI</h1>
+      <p id="onboardSubtitle">First, let Doki know who is knocking on the pond.</p>
+    </div>
+    <div class="onboard-body" id="profileStep">
+      <label for="profileUsername">Username</label>
+      <input id="profileUsername" type="text" maxlength="24" autocomplete="nickname" placeholder="Choose a username">
+      <label for="profileAge">Age</label>
+      <input id="profileAge" type="number" inputmode="numeric" min="1" max="120" placeholder="Your age">
+      <div class="onboard-error" id="profileError"></div>
+      <button class="onboard-primary" id="profileContinue">Continue</button>
+    </div>
+    <div class="onboard-body onboard-hidden" id="termsStep">
+      <div class="terms-box terms-copy">
+        <h2>Terms &amp; Conditions</h2>
+        <p><strong>Last updated:</strong> 17 August 2026.</p>
+        <p>Welcome to Doki Duck AI, a small experimental entertainment and learning application. By continuing, you acknowledge that this is a prototype made for personal use and friendly testing. Doki may take grammar seriously for approximately three seconds and then return to being a duck.</p>
+        <h3>1. Your profile</h3>
+        <p>You may provide a username and age when first entering the application. The username you choose may be displayed inside the application and, if a shared leaderboard is later enabled, may be visible to other players together with permitted game statistics such as XP, level or achievements.</p>
+        <h3>2. Saved progress</h3>
+        <p>The application may save game and learning progress on the device, including your username, age, Pond Points, XP, worms, level, growth stage, achievements, message progress and feeding state. When the shared leaderboard is enabled, the leaderboard may also store your username, XP, Doki level and achievement count in Firebase so players can see shared rankings. Your age remains local and is not displayed on the leaderboard. Clearing application storage, browser data or uninstalling the application may remove locally stored progress.</p>
+        <h3>3. Leaderboards and public game information</h3>
+        <p>If a shared leaderboard is enabled, selected profile information and game statistics may be visible to other players. Do not choose a username that contains information you do not want other players to see. The application will not intentionally ask you for passwords, payment credentials or secret access keys.</p>
+        <h3>4. Third-party images and resources</h3>
+        <p>The application may display images, illustrations, fonts, libraries or other resources obtained from third-party sources. The developer does not claim ownership of material that belongs to another rights holder. Where appropriate, third-party material may be credited or removed upon legitimate request.</p>
+        <h3>5. Copyright</h3>
+        <p>Original Doki Duck AI artwork, code and creative material remain the property of their respective rights holders unless otherwise stated. Nothing in this document grants a user ownership of such material. All rights reserved where applicable.</p>
+        <h3>6. No warranty</h3>
+        <p>This application is provided as an experimental prototype. Features may break, disappear, behave strangely, or occasionally make Doki look more confident than the code deserves. The application is provided without a promise that every feature will always work.</p>
+        <h3>7. Learning information</h3>
+        <p>Grammar explanations, quizzes and other educational material are intended for learning and entertainment. They should not be treated as professional academic, legal or linguistic advice.</p>
+        <h3>8. Satirical references</h3>
+        <p>Any references to products, services or companies such as ChatGPT or Claude are used only as jokes, satire or fictional comparisons. Doki Duck AI does not claim to be affiliated with, endorsed by, sponsored by, or officially connected with those companies or services. Such references are not intended to defame any person, company or product.</p>
+        <h3>9. Prank and sarcastic content</h3>
+        <p>Doki Duck AI may intentionally use sarcasm, jokes, exaggerated reactions and fictional insults as part of its character. These are intended as entertainment and should not be interpreted as factual statements about the player.</p>
+        <h3>10. Your responsibility</h3>
+        <p>Please do not enter sensitive personal information into the chat. You are responsible for the username and other information you choose to provide. If you are testing the application with another person, make sure you have their permission before sharing their personal information.</p>
+        <h3>11. Changes</h3>
+        <p>These terms may be updated as the prototype changes. If important data or sharing behavior changes, the application may ask you to review the terms again.</p>
+        <h3>12. The legally important duck clause</h3>
+        <p>By continuing, you understand that Doki is a duck, not your lawyer, therapist, accountant, academic examiner or emergency contact. Doki accepts bread. Doki does not accept responsibility for the consequences of your terrible grammar.</p>
+        <p><strong>By selecting “ACCEPT COOKIES &amp; BREADS”, you confirm that you have read and understood this prototype notice and agree to continue.</strong></p>
+      </div>
+      <div class="onboard-error" id="termsError"></div>
+      <button class="onboard-primary" id="acceptTerms">ACCEPT COOKIES &amp; BREADS</button>
+      <button class="onboard-secondary" id="rejectTerms">Reject (this is not necessary)</button>
+    </div>
+  </div>
+</div>
+
+<div class="phone" id="phone">
+  <div class="toolbar">
+    <div class="tabdot"></div>
+    <div class="tabdot"></div>
+    <div class="addr-pill">
+      <span class="lock">🔒</span>
+      <span class="url">dokiduck.ai/chat</span>
+    </div>
+    <button class="incog-btn" id="incogBtn" aria-label="Toggle incognito mode" title="Toggle incognito mode">
+      <svg viewBox="0 0 24 24">
+        <path class="glyph-fill" d="M12 3c-2.6 0-4.9 1.3-6.3 3.3L2 8v1h1.2c-.1.3-.2.7-.2 1 0 2.2 1.8 4 4 4 1.9 0 3.4-1.3 3.9-3h2.2c.5 1.7 2 3 3.9 3 2.2 0 4-1.8 4-4 0-.3-.1-.7-.2-1H22V8l-3.7-1.7C16.9 4.3 14.6 3 12 3zm-5 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm10 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+        <rect class="glyph-fill" x="9.2" y="9.3" width="5.6" height="1.4" rx="0.6"/>
+        <path class="glyph-fill" d="M6.5 16.8c1.5-1 3.5-1.5 5.5-1.5s4 .5 5.5 1.5c.4.3.3.9-.2 1-3.5.8-7.1.8-10.6 0-.5-.1-.6-.7-.2-1z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="header">
+    <div class="avatar-wrap">
+      <div class="avatar"><img src="data:image/jpeg;base64,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" alt="Doki Duck AI"></div>
+      <div class="sunglasses">
+        <svg viewBox="0 0 100 30">
+          <rect x="2" y="4" width="34" height="20" rx="8" fill="#12111a"/>
+          <rect x="64" y="4" width="34" height="20" rx="8" fill="#12111a"/>
+          <rect x="36" y="11" width="28" height="5" rx="2.5" fill="#12111a"/>
+          <rect x="6" y="7" width="26" height="7" rx="4" fill="#3a3950" opacity="0.55"/>
+          <rect x="68" y="7" width="26" height="7" rx="4" fill="#3a3950" opacity="0.55"/>
+        </svg>
+      </div>
+    </div>
+    <div class="header-text">
+      <div class="header-name">Doki Duck AI</div>
+      <div class="header-status" id="headerStatus"><span class="dot"></span> knows exactly one word</div>
+    </div>
+    <div class="header-tools">
+      <button class="menu-trigger" id="menuTrigger" type="button" aria-label="Open Doki menu" aria-expanded="false">
+        <span class="menu-trigger-lines" aria-hidden="true"><span></span><span></span><span></span></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="messages" id="messages">
+    <div class="system-note" id="systemNote">You are now chatting with Doki Duck AI. It has one skill.</div>
+    <div class="row bot">
+      <div class="bot-mini">
+        <img src="data:image/jpeg;base64,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" alt="">
+        <div class="sunglasses">
+          <svg viewBox="0 0 100 30">
+            <rect x="2" y="4" width="34" height="20" rx="8" fill="#12111a"/>
+            <rect x="64" y="4" width="34" height="20" rx="8" fill="#12111a"/>
+            <rect x="36" y="11" width="28" height="5" rx="2.5" fill="#12111a"/>
+          </svg>
+        </div>
+      </div>
+      <div class="bubble quack-reply">How can I quack you today? 🦆</div>
+    </div>
+  </div>
+
+  <div class="meter" id="meter">&nbsp;</div>
+
+  <div class="grammar-status" id="grammarStatus" aria-live="polite">Grammar engine: starting…</div>
+  <div class="grammar-learning-panel" id="grammarLearningPanel" role="region" aria-label="Doki Grammar Police" aria-live="polite" aria-hidden="true">
+    <div class="grammar-learning-head" id="grammarLearningHead">🚨 Doki Grammar Police</div>
+    <div class="grammar-learning-body" id="grammarLearningBody"></div>
+  </div>
+
+  <div class="inputbar">
+    <input type="text" id="userInput" placeholder="Type anything…" autocomplete="off" maxlength="500">
+    <button class="send-btn" id="sendBtn" aria-label="Send">➤</button>
+  </div>
+
+</div>
+
+<!-- PASS 2B: compact navigation menu for Profile, Trophy Room and Leaderboard -->
+<div class="doki-menu-backdrop hidden" id="dokiMenuBackdrop" aria-hidden="true"></div>
+<aside class="doki-menu-panel" id="dokiMenuPanel" aria-hidden="true" aria-label="Doki Duck menu">
+  <div class="doki-menu-head">
+    <div><div class="doki-menu-title">Doki's Menu</div><div class="doki-menu-subtitle">Choose your pond destination.</div></div>
+    <button class="doki-menu-close" id="dokiMenuClose" type="button" aria-label="Close menu">×</button>
+  </div>
+  <div class="doki-menu-profile">
+    <div class="doki-menu-avatar">🦆</div>
+    <div style="min-width:0"><div class="doki-menu-profile-name" id="dokiMenuProfileName">Your Doki</div><div class="doki-menu-profile-meta" id="dokiMenuProfileMeta">Level 1 · 0 XP</div></div>
+  </div>
+  <nav class="doki-menu-list" aria-label="Doki navigation">
+    <button class="doki-menu-item" id="menuProfileBtn" type="button"><span class="doki-menu-icon">👤</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">My Doki</span><span class="doki-menu-item-note">Profile, XP and pond progress</span></span><span class="doki-menu-arrow">›</span></button>
+    <button class="doki-menu-item" id="menuTrophyBtn" type="button"><span class="doki-menu-icon">🏆</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Trophy Room</span><span class="doki-menu-item-note">Earned and locked Doki trophies</span></span><span class="doki-menu-arrow">›</span></button>
+    <button class="doki-menu-item" id="menuLeaderboardBtn" type="button"><span class="doki-menu-icon">📊</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Pond Leaderboard</span><span class="doki-menu-item-note">See the shared XP rankings</span></span><span class="doki-menu-arrow">›</span></button>
+  </nav>
+</aside>
+
+<!-- PASS 2B: player profile + shared leaderboard -->
+<div class="modal-backdrop hidden" id="profileModal" aria-hidden="true">
+  <section class="data-modal" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+    <div class="data-modal-head">
+      <div class="data-modal-title" id="profileModalTitle">👤 My Doki Profile</div>
+      <button class="modal-close" id="profileModalClose" type="button" aria-label="Close profile">×</button>
+    </div>
+    <div class="data-modal-body">
+      <div class="profile-grid">
+        <div class="stat-card"><div class="stat-label">Username</div><div class="stat-value" id="profileNameValue">—</div></div>
+        <div class="stat-card"><div class="stat-label">XP</div><div class="stat-value" id="profileXpValue">0</div></div>
+        <div class="stat-card"><div class="stat-label">Doki Level</div><div class="stat-value" id="profileLevelValue">1</div></div>
+        <div class="stat-card"><div class="stat-label">Pond Points</div><div class="stat-value" id="profilePondValue">0</div></div>
+        <div class="stat-card"><div class="stat-label">Achievements</div><div class="stat-value" id="profileAchievementValue">0</div></div>
+        <div class="stat-card"><div class="stat-label">Local Progress</div><div class="stat-value" id="profileProgressValue">0 messages</div></div>
+      </div>
+      <button class="achievement-launch" id="openAchievementsBtn" type="button">
+        <span class="achievement-launch-copy"><span class="achievement-launch-title">🏆 Doki's Trophy Room</span><span class="achievement-launch-note">View earned and locked achievements</span></span>
+        <span class="achievement-launch-arrow">›</span>
+      </button>
+      <p class="modal-note">Cloud leaderboard data is limited to your username, XP, Doki level and achievement count. Your age remains local.</p>
+    </div>
+  </section>
+</div>
+
+<div class="modal-backdrop hidden" id="achievementsModal" aria-hidden="true">
+  <section class="data-modal" role="dialog" aria-modal="true" aria-labelledby="achievementsModalTitle">
+    <div class="data-modal-head">
+      <div class="data-modal-title" id="achievementsModalTitle">🏆 Doki's Trophy Room</div>
+      <button class="modal-close" id="achievementsModalClose" type="button" aria-label="Close achievements">×</button>
+    </div>
+    <div class="data-modal-body">
+      <div class="trophy-summary"><strong id="achievementSummaryCount">0 / 15 trophies earned</strong><span>More unlock as Doki grows.</span></div>
+      <p class="trophy-room-intro">Earned trophies get their own little duck attitude. Locked ones are waiting patiently. Doki is not.</p>
+      <div id="achievementList" class="achievement-list"></div>
+      <p class="trophy-locked-note">Some trophies are intentionally tied to future systems such as grammar learning, quizzes, feeding and Doki growth. They remain locked until those systems exist and the requirement is genuinely met.</p>
+    </div>
+  </section>
+</div>
+
+<div class="modal-backdrop hidden" id="leaderboardModal" aria-hidden="true">
+  <section class="data-modal" role="dialog" aria-modal="true" aria-labelledby="leaderboardModalTitle">
+    <div class="data-modal-head">
+      <div class="data-modal-title" id="leaderboardModalTitle">🏆 Pond Leaderboard</div>
+      <button class="modal-close" id="leaderboardModalClose" type="button" aria-label="Close leaderboard">×</button>
+    </div>
+    <div class="data-modal-body">
+      <p class="modal-note">Ranked by XP. Your age and Firebase UID are never displayed here.</p>
+      <div id="leaderboardList" class="leaderboard-list">
+        <div class="leader-loading">Loading the pond rankings…</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-check-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-database-compat.js"></script>
+<script type="module">
+import { getApp as getModularFirebaseApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
+import { getAI, getGenerativeModel, GoogleAIBackend, Schema } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-ai.js';
+import { WorkerLinter } from 'https://unpkg.com/harper.js@2.4.0/dist/index.js';
+import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInlined.js';
+
+(function(){
+  const STORAGE_KEY = 'dokiDuckAI.player.v1';
+  const DEFAULT_PLAYER = {
+    username: '', age: '', acceptedTerms: false,
+    pondPoints: 0, xp: 0, worms: 0, dokiLevel: 1, dokiStage: 1,
+    achievements: [], wordProgress: 0, messagesUsed: 0, needsFeeding: false
+  };
+  let player = loadPlayer();
+
+  // PASS 3A: local Harper grammar engine. Keep initialization off the chat path.
+  window.dokiHarper = { ready:false, linter:null, error:null };
+  const harperLinter = new WorkerLinter({ binary: binaryInlined });
+  window.dokiHarper.linter = harperLinter;
+  window.dokiHarperReady = harperLinter.setup().then(function(){
+    window.dokiHarper.ready = true;
+    const status = document.getElementById('grammarStatus');
+    if(status){ status.className='grammar-status clean'; status.textContent='✓ Grammar engine ready'; }
+    return harperLinter;
+  }).catch(function(error){
+    window.dokiHarper.error = error;
+    const status = document.getElementById('grammarStatus');
+    if(status){ status.className='grammar-status offline'; status.textContent='⚠ Grammar engine unavailable · chat still works'; }
+    console.warn('Doki Duck AI: Local grammar engine unavailable. Chat will continue normally.', error);
+    return null;
+  });
+
+  // PASS 2A: Firebase anonymous identity + cloud player sync.
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDfeMzEi8KkyOBcGlnsWto_3g9npBMpdyE",
+    authDomain: "doki-duck-ai.firebaseapp.com",
+    projectId: "doki-duck-ai",
+    storageBucket: "doki-duck-ai.firebasestorage.app",
+    messagingSenderId: "697451070915",
+    appId: "1:697451070915:web:297e53688065db85746976",
+    measurementId: "G-H5R9XZBLFY",
+    databaseURL: "https://doki-duck-ai-default-rtdb.asia-southeast1.firebasedatabase.app"
+  };
+
+  let firebaseReady = false;
+  let firebaseAuthUser = null;
+  let cloudSyncTimer = null;
+  let cloudSyncPromise = Promise.resolve();
+
+  function loadPlayer(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return {...DEFAULT_PLAYER};
+      return {...DEFAULT_PLAYER, ...JSON.parse(raw)};
+    } catch(e){ return {...DEFAULT_PLAYER}; }
+  }
+
+  function cloudPlayerData(){
+    return {
+      username: String(player.username || '').trim(),
+      xp: Math.max(0, Number(player.xp) || 0),
+      dokiLevel: Math.max(1, Number(player.dokiLevel) || 1),
+      achievementCount: Array.isArray(player.achievements) ? player.achievements.length : 0
+    };
+  }
+
+  function syncCloudPlayerNow(){
+    if(!firebaseReady || !firebaseAuthUser || !player.acceptedTerms || !player.username) return;
+    const data = cloudPlayerData();
+    const ref = firebase.database().ref('players/' + firebaseAuthUser.uid);
+    cloudSyncPromise = ref.set(data).catch(function(error){
+      console.warn('Doki Duck AI: Firebase player sync failed; local progress remains available.', error);
+    });
+  }
+
+  function scheduleCloudSync(){
+    if(cloudSyncTimer) clearTimeout(cloudSyncTimer);
+    cloudSyncTimer = setTimeout(function(){
+      cloudSyncTimer = null;
+      syncCloudPlayerNow();
+    }, 350);
+  }
+
+  function savePlayer(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(player)); } catch(e) {}
+    scheduleCloudSync();
+  }
+
+  async function initFirebaseIdentity(){
+    try {
+      if(!window.firebase) throw new Error('Firebase SDK did not load.');
+      if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+
+      // Firebase App Check: reCAPTCHA Enterprise attestation.
+      // Initialize this before accessing Auth or Realtime Database.
+      firebase.appCheck().activate(
+        new firebase.appCheck.ReCaptchaEnterpriseProvider('6LfWh40tAAAAANQNJVVc4CNshFFAMxSSJW6s38my'),
+        true
+      );
+
+      const auth = firebase.auth();
+      const database = firebase.database();
+      void database;
+
+      try {
+        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      } catch(e) {
+        console.warn('Doki Duck AI: Firebase auth persistence could not be configured.', e);
+      }
+
+      await auth.signInAnonymously();
+      firebaseReady = true;
+      firebaseAuthUser = auth.currentUser;
+
+      // Warm the secondary verifier in the background. Failure is non-fatal and
+      // never prevents the local grammar engine from working.
+      void initDokiGeminiVerifier();
+
+      if(!firebaseAuthUser) throw new Error('Anonymous Firebase user was not available.');
+
+      // Restore only public leaderboard fields from an existing cloud record.
+      // Terms acceptance and age remain local-only.
+      try {
+        const snapshot = await firebase.database().ref('players/' + firebaseAuthUser.uid).once('value');
+        const remote = snapshot.val();
+        if(remote && player.acceptedTerms && !player.username){
+          if(typeof remote.username === 'string') player.username = remote.username;
+          if(Number.isFinite(Number(remote.xp))) player.xp = Number(remote.xp);
+          if(Number.isFinite(Number(remote.dokiLevel))) player.dokiLevel = Math.max(1, Number(remote.dokiLevel));
+          savePlayer();
+        }
+      } catch(e) {
+        console.warn('Doki Duck AI: Cloud player read failed; continuing with local data.', e);
+      }
+
+      if(player.acceptedTerms && player.username) syncCloudPlayerNow();
+      console.info('Doki Duck AI: Firebase anonymous identity ready.', firebaseAuthUser.uid);
+    } catch(error) {
+      firebaseReady = false;
+      firebaseAuthUser = null;
+      console.warn('Doki Duck AI: Firebase is unavailable. Continuing in local-only mode.', error);
+    }
+  }
+
+  // Start Firebase in the background. The app never waits for it to remain usable.
+  initFirebaseIdentity();
+
+  const onboardOverlay = document.getElementById('onboardOverlay');
+  const profileStep = document.getElementById('profileStep');
+  const termsStep = document.getElementById('termsStep');
+  const profileUsername = document.getElementById('profileUsername');
+  const profileAge = document.getElementById('profileAge');
+  const profileError = document.getElementById('profileError');
+  const termsError = document.getElementById('termsError');
+  const profileContinue = document.getElementById('profileContinue');
+  const acceptTerms = document.getElementById('acceptTerms');
+  const rejectTerms = document.getElementById('rejectTerms');
+  const menuTrigger = document.getElementById('menuTrigger');
+  const dokiMenuPanel = document.getElementById('dokiMenuPanel');
+  const dokiMenuBackdrop = document.getElementById('dokiMenuBackdrop');
+  const dokiMenuClose = document.getElementById('dokiMenuClose');
+  const menuProfileBtn = document.getElementById('menuProfileBtn');
+  const menuTrophyBtn = document.getElementById('menuTrophyBtn');
+  const menuLeaderboardBtn = document.getElementById('menuLeaderboardBtn');
+  const dokiMenuProfileName = document.getElementById('dokiMenuProfileName');
+  const dokiMenuProfileMeta = document.getElementById('dokiMenuProfileMeta');
+
+  function showApp(){
+    onboardOverlay.classList.add('onboard-hidden');
+    updateDokiMenuSummary();
+    savePlayer();
+  }
+  function startOnboarding(){
+    onboardOverlay.classList.remove('onboard-hidden');
+    profileStep.classList.remove('onboard-hidden');
+    termsStep.classList.add('onboard-hidden');
+    profileUsername.value = player.username || '';
+    profileAge.value = player.age || '';
+    profileUsername.focus();
+  }
+  function openTerms(){
+    const username = profileUsername.value.trim().replace(/\s+/g,' ');
+    const age = Number(profileAge.value);
+    if(username.length < 2 || username.length > 24){
+      profileError.textContent = 'Please choose a username between 2 and 24 characters.';
+      return;
+    }
+    if(!Number.isInteger(age) || age < 1 || age > 120){
+      profileError.textContent = 'Please enter a valid age.';
+      return;
+    }
+    profileError.textContent = '';
+    player.username = username;
+    player.age = age;
+    profileStep.classList.add('onboard-hidden');
+    termsStep.classList.remove('onboard-hidden');
+    document.getElementById('onboardTitle').textContent = 'The Extremely Serious Duck Agreement';
+    document.getElementById('onboardSubtitle').textContent = 'Please scroll through the legal-looking duck paperwork.';
+    termsStep.querySelector('.terms-box').scrollTop = 0;
+  }
+  function accept(){
+    player.acceptedTerms = true;
+    termsError.textContent = '';
+    syncAvailableAchievements();
+    savePlayer();
+    showApp();
+  }
+  profileContinue.addEventListener('click', openTerms);
+  profileUsername.addEventListener('keydown', e=>{ if(e.key==='Enter') profileAge.focus(); });
+  profileAge.addEventListener('keydown', e=>{ if(e.key==='Enter') openTerms(); });
+  acceptTerms.addEventListener('click', accept);
+  rejectTerms.addEventListener('click', ()=>{ termsError.textContent = 'Doki has reviewed your rejection and filed it under “unnecessary paperwork”.'; });
+
+  if(player.acceptedTerms && player.username){ showApp(); }
+  else startOnboarding();
+
+  window.dokiPlayer = player;
+  window.dokiSavePlayer = savePlayer;
+  window.dokiContext = { get: getDokiContext, clear: clearDokiContext };
+
+  const phone = document.getElementById('phone');
+  const messagesEl = document.getElementById('messages');
+  const inputEl = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const meterEl = document.getElementById('meter');
+  const grammarStatusEl = document.getElementById('grammarStatus');
+  const grammarLearningPanel = document.getElementById('grammarLearningPanel');
+  const grammarLearningHead = document.getElementById('grammarLearningHead');
+  const grammarLearningBody = document.getElementById('grammarLearningBody');
+  // Pass 3B: monotonically increasing scan token prevents an older async Harper
+  // result from overwriting a newer message's grammar result.
+  let grammarScanToken = 0;
+
+  /* PASS 3C-B1: session-only context buffer + escalation gate.
+     This stage NEVER calls Gemini. It only decides whether a future Gemini
+     verifier should be considered, while preserving the existing local path. */
+  const DOKI_CONTEXT_MAX_SENTENCES = 3;
+  const dokiContextBuffer = [];
+  let dokiLastRoute = 'local';
+  let dokiLastRouteReason = '';
+
+  // PASS 3C-B3: guarded Firebase AI Logic / Gemini secondary verifier.
+  // The local Harper + Doki pipeline remains the primary path.
+  const DOKI_GEMINI_MODEL = 'gemini-3.6-flash';
+  let dokiGeminiModel = null;
+  let dokiGeminiInitPromise = null;
+  let dokiGeminiUnavailableLogged = false;
+
+  function splitDokiSentences(text){
+    return String(text || '')
+      .replace(/\s+/g,' ')
+      .split(/(?<=[.!?])\s+/)
+      .map(function(x){ return x.trim(); })
+      .filter(Boolean);
+  }
+
+  function addDokiContext(text){
+    splitDokiSentences(text).forEach(function(sentence){
+      if(!sentence) return;
+      dokiContextBuffer.push(sentence);
+    });
+    while(dokiContextBuffer.length > DOKI_CONTEXT_MAX_SENTENCES) dokiContextBuffer.shift();
+  }
+
+  function getDokiContext(){ return dokiContextBuffer.slice(); }
+
+  function clearDokiContext(){
+    dokiContextBuffer.length = 0;
+    dokiLastRoute = 'local';
+    dokiLastRouteReason = '';
+  }
+
+  function hasComplexClauseSignals(text){
+    const t=String(text||'');
+    const conjunctions=(t.match(/\b(and|but|although|because|while|when|if|unless|since|before|after|though|which|who|that)\b/gi)||[]).length;
+    const commas=(t.match(/,/g)||[]).length;
+    const relative=(t.match(/\b(who|which|whom|whose|that)\b/gi)||[]).length;
+    return conjunctions >= 2 || commas >= 2 || relative >= 1 && conjunctions >= 1;
+  }
+
+  function hasContextSensitiveSignals(text, previous){
+    const t=String(text||'').toLowerCase();
+    const ctx=Array.isArray(previous)?previous:[];
+    const pronoun=/\b(he|she|they|it|them|their|his|her|this|that|these|those)\b/i.test(text||'');
+    const conditional=/\b(if|unless)\b/i.test(t) || /\b(would|could|might|should)\s+have\b/i.test(t);
+    const participle=/^[\s\"']*(walking|running|having|being|after|while|when)\b[^.!?]*,/i.test(String(text||''));
+    const temporal=/\b(yesterday|today|tomorrow|last\s+(?:night|week|month|year)|earlier|previously|now|already|still|yet)\b/i.test(t);
+    const priorTemporal=ctx.some(function(x){ return /\b(yesterday|today|tomorrow|last\s+(?:night|week|month|year)|earlier|previously|now|already|still|yet)\b/i.test(x); });
+    const crossSentencePronoun=ctx.length>0 && /^(he|she|they|it|this|that|these|those)\b/i.test(String(text||'').trim());
+    return {pronoun,conditional,participle,temporal,priorTemporal,crossSentencePronoun};
+  }
+
+
+  function hasProperNounRisk(text, lints){
+    const source = String(text || '');
+    const nameLead = /\b(?:my name is|i am|i'm|im|called|live in|from)\s+([a-z][a-z'-]{1,})\b/i;
+    if(!nameLead.test(source)) return false;
+    return (Array.isArray(lints) ? lints : []).some(function(l){
+      try {
+        return /spell|spelling|misspell/i.test(
+          String(safeLintKind(l)) + ' ' + String(safeLintMessage(l))
+        );
+      } catch(e){ return false; }
+    });
+  }
+
+  function levenshteinDistance(a, b){
+    const s = String(a || ''), t = String(b || '');
+    const prev = new Array(t.length + 1);
+    const cur = new Array(t.length + 1);
+    for(let j=0;j<=t.length;j++) prev[j]=j;
+    for(let i=1;i<=s.length;i++){
+      cur[0]=i;
+      for(let j=1;j<=t.length;j++){
+        const cost = s[i-1] === t[j-1] ? 0 : 1;
+        cur[j] = Math.min(cur[j-1] + 1, prev[j] + 1, prev[j-1] + cost);
+      }
+      for(let j=0;j<=t.length;j++) prev[j]=cur[j];
+    }
+    return prev[t.length];
+  }
+
+  function exactSpanFor(originalText, fragment){
+    const source = String(originalText || '');
+    const needle = String(fragment || '');
+    if(!needle) return null;
+    const first = source.indexOf(needle);
+    if(first < 0) return null;
+    if(source.indexOf(needle, first + 1) >= 0) return null;
+    return {start:first, end:first + needle.length};
+  }
+
+  async function initDokiGeminiVerifier(){
+    if(dokiGeminiModel) return dokiGeminiModel;
+    if(dokiGeminiInitPromise) return dokiGeminiInitPromise;
+
+    dokiGeminiInitPromise = (async function(){
+      try {
+        if(!window.firebase || !firebase.apps || !firebase.apps.length){
+          throw new Error('Firebase app is not initialized yet.');
+        }
+
+        const modularApp = getModularFirebaseApp();
+        const ai = getAI(modularApp, { backend: new GoogleAIBackend() });
+
+        const correctionSchema = Schema.object({
+          properties: {
+            status: Schema.enumString({ enum: ['clean','corrected','uncertain'] }),
+            confidence: Schema.number(),
+            corrections: Schema.array({
+              items: Schema.object({
+                properties: {
+                  original: Schema.string(),
+                  replacement: Schema.string(),
+                  reason: Schema.string(),
+                  category: Schema.string()
+                }
+              }),
+              maxItems: 6
+            })
+          }
+        });
+
+        dokiGeminiModel = getGenerativeModel(ai, {
+          model: DOKI_GEMINI_MODEL,
+          systemInstruction:
+            'You are Doki Grammar Police, a strict secondary grammar verifier. ' +
+            'You are not a rewriting assistant. Preserve wording, tone, dialect, names, places, brands, ' +
+            'slang, dialogue fragments, and valid unusual sentences. Only report clear grammar, spelling, ' +
+            'punctuation, or context-dependent tense/reference errors. Never improve style, vocabulary, flow, ' +
+            'elegance, or concision. Use the smallest possible edit. If a sentence is valid or ambiguous, ' +
+            'return clean or uncertain instead of forcing a correction. Every correction must copy an exact ' +
+            'substring from the current sentence into original, and replacement must be the minimal corrected form.',
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: correctionSchema,
+            temperature: 0
+          }
+        });
+
+        return dokiGeminiModel;
+      } catch(error) {
+        if(!dokiGeminiUnavailableLogged){
+          dokiGeminiUnavailableLogged = true;
+          console.warn('Doki Duck AI: Gemini verifier unavailable; local grammar path remains active.', error);
+        }
+        dokiGeminiModel = null;
+        return null;
+      }
+    })();
+
+    return dokiGeminiInitPromise;
+  }
+
+  function makeGeminiLint(originalText, correction){
+    const span = exactSpanFor(originalText, correction && correction.original);
+    if(!span) return null;
+    return {
+      start: span.start,
+      end: span.end,
+      span: function(){ return {start: span.start, end: span.end}; },
+      problem: String(correction.original || ''),
+      replacement: String(correction.replacement || ''),
+      rule: String(correction.category || 'Grammar / sentence structure'),
+      why: String(correction.reason || 'Doki found a context-sensitive grammar issue.')
+    };
+  }
+
+  const DOKI_PREPOSITION_WORDS = new Set([
+    'aboard','about','above','across','after','against','along','amid','among','around','as',
+    'at','before','behind','below','beneath','beside','besides','between','beyond','by',
+    'concerning','despite','down','during','except','for','from','in','inside','into','like',
+    'near','of','off','on','onto','over','past','regarding','since','through','throughout',
+    'to','toward','towards','under','underneath','until','unto','up','upon','via','with','within','without'
+  ]);
+
+  function cleanLintToken(value){
+    return String(value || '').trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g,'').toLowerCase();
+  }
+
+  function isLikelyProperName(text, problem){
+    const source = String(text || '');
+    const token = String(problem || '').trim();
+    if(!token || !/^[A-Z][A-Za-z'\-]*$/.test(token)) return false;
+
+    // Names/places introduced by explicit identity or location phrases are protected.
+    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const explicit = new RegExp('\\b(?:my\\s+name\\s+is|called|live\\s+in|from|named|meet|met)\\s+' + escaped + '\\b','i');
+    if(explicit.test(source)) return true;
+
+    // A capitalized word that is not the first word of the sentence is a probable proper noun.
+    const index = source.indexOf(token);
+    if(index > 0){
+      const before = source.slice(0,index);
+      if(!/^[\\s\\"'“‘([\\-]*$/.test(before.slice(before.lastIndexOf('.')+1))) return true;
+    }
+    return false;
+  }
+
+  function isActualPreposition(problem){
+    return DOKI_PREPOSITION_WORDS.has(cleanLintToken(problem));
+  }
+
+  function sanitizeGrammarLint(text, lint, contextualEscalation){
+    if(!lint) return false;
+    const problem = lint.problem != null ? String(lint.problem) : safeProblemText(lint);
+    const replacement = lint.replacement != null ? String(lint.replacement) : suggestionOfLint(lint);
+    const rule = String(lint.rule || safeLintKind(lint) || '').toLowerCase();
+
+    // A finite verb such as “was” must never be displayed as a preposition error.
+    if(rule.includes('preposition') && !isActualPreposition(problem)) return false;
+
+    // Do not flag likely user names/places as spelling errors, even if Gemini repeats
+    // the same correction after the local Harper result was already filtered.
+    if(rule.includes('spell') && isLikelyProperName(text, problem)) return false;
+
+    // During contextual verification, an unresolved finding is not safe to show.
+    if(contextualEscalation && !replacement.trim()) return false;
+
+    return true;
+  }
+
+  function sanitizeGrammarLints(text, lints, contextualEscalation){
+    return (Array.isArray(lints) ? lints : []).filter(function(lint){
+      return sanitizeGrammarLint(text, lint, contextualEscalation);
+    });
+  }
+
+  function filterUnsafeEscalationLints(localLints, properNounRisk, contextualEscalation){
+    const base = Array.isArray(localLints) ? localLints.slice() : [];
+    return base.filter(function(l){
+      const hasReplacement = !!suggestionOfLint(l);
+      if(properNounRisk){
+        try {
+          const text = String(safeLintKind(l)) + ' ' + String(safeLintMessage(l));
+          if(/spell|spelling|misspell/i.test(text)) return false;
+        } catch(e) {}
+      }
+      // When Harper raises an unresolved finding during a contextual escalation,
+      // never surface that unresolved finding as a factual grammar error. A later
+      // Gemini result may replace it with a validated correction; otherwise it is
+      // safer to suppress it than to invent a rule or category.
+      if(contextualEscalation && !hasReplacement) return false;
+      return true;
+    });
+  }
+
+  function mergeGeminiResultIntoLints(originalText, localLints, verified, properNounRisk, contextualEscalation){
+    const base = Array.isArray(localLints) ? localLints.slice() : [];
+    const safeBase = filterUnsafeEscalationLints(base, properNounRisk, contextualEscalation);
+    if(!verified || !verified.ok) return safeBase;
+
+    const corrections = Array.isArray(verified.corrections) ? verified.corrections : [];
+    const geminiLints = corrections.map(function(c){
+      return makeGeminiLint(originalText, c);
+    }).filter(Boolean);
+
+    if(verified.status === 'clean' || verified.status === 'uncertain'){
+      return safeBase;
+    }
+
+    if(!geminiLints.length) return safeBase;
+
+    const merged = safeBase.filter(function(l){
+      const sp = spanOfLint(l);
+      if(!sp) return true;
+      return !geminiLints.some(function(g){
+        const gp = g.span();
+        return !(gp.end <= sp.start || gp.start >= sp.end);
+      });
+    });
+
+    geminiLints.forEach(function(g){ merged.push(g); });
+    return merged;
+  }
+
+  async function runDokiGeminiVerifier(originalText, contextBefore, localLints, routeReason){
+    try {
+      const model = await initDokiGeminiVerifier();
+      if(!model) return null;
+
+      const safeContext = (Array.isArray(contextBefore) ? contextBefore : []).slice(-DOKI_CONTEXT_MAX_SENTENCES);
+      const findings = (Array.isArray(localLints) ? localLints : []).slice(0, 8).map(function(l){
+        return {
+          problem: safeProblemText(l),
+          replacement: suggestionOfLint(l),
+          rule: safeLintKind(l),
+          message: safeLintMessage(l)
+        };
+      });
+
+      const prompt =
+        'Review ONLY the target sentence as a grammar verifier. Return the required JSON object. ' +
+        'Do not rewrite the whole sentence. Do not substitute vocabulary for style. ' +
+        'A name, place, brand, or unusual but valid construction must be preserved unless clearly erroneous. ' +
+        'Never classify a finite verb such as is, are, was, were, has, or have as a preposition. ' +
+        'Only use the category Prepositions when the original substring is actually a preposition such as in, on, at, to, from, with, for, of, by, or similar. ' +
+        'Treat capitalized personal names and place names as valid unless the sentence itself clearly proves they are misspelled. ' +
+        'Use context only to resolve genuine cross-sentence grammar, tense, or reference issues. ' +
+        'If no clear correction is required, return clean. If ambiguity prevents a safe decision, return uncertain. ' +
+        'The target sentence is:\n' + JSON.stringify(String(originalText || '')) +
+        '\nRecent context:\n' + JSON.stringify(safeContext) +
+        '\nLocal findings (may be wrong and must be independently judged):\n' + JSON.stringify(findings) +
+        '\nEscalation reason:\n' + JSON.stringify(String(routeReason || ''));
+
+      const result = await model.generateContent(prompt);
+      const raw = result && result.response && typeof result.response.text === 'function'
+        ? result.response.text()
+        : '';
+      if(!raw) return null;
+
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch(e) { return null; }
+      return validateFutureGeminiResult(parsed, originalText);
+    } catch(error) {
+      console.warn('Doki Duck AI: Gemini verifier request failed; local grammar path remains active.', error);
+      return null;
+    }
+  }
+
+  function getDokiEscalation(text, previous, lints){
+    const ctx=Array.isArray(previous)?previous:[];
+    const signals=hasContextSensitiveSignals(text,ctx);
+    const reasons=[];
+    const normalized=Array.isArray(lints)?lints:[];
+
+    // Safe local path: short/simple messages with no contextual signals.
+    if(!String(text||'').trim()) return {route:'local',reason:'empty'};
+
+    // A missing Harper suggestion is only an escalation signal when Doki also
+    // lacks a high-confidence local replacement for the same span. This keeps
+    // ordinary cases such as “She go” local while reserving Gemini for genuinely
+    // unresolved cases.
+    const fallbackForGate=buildDokiFallbackLints(text, normalized);
+    const hasUnresolvedNoSuggestion=normalized.some(function(l){
+      const suggestion = safeSuggestions(l).length || (l && typeof l.replacement==='string' && l.replacement.trim());
+      if(suggestion) return false;
+      const sp=spanOfLint(l);
+      const covered=fallbackForGate.some(function(f){
+        const fp=typeof f.span==='function' ? f.span() : null;
+        return sp && fp && !(fp.end<=sp.start || fp.start>=sp.end) && !!f.replacement;
+      });
+      return !covered;
+    });
+    if(hasUnresolvedNoSuggestion) reasons.push('Harper issue without a confident replacement');
+    if(signals.crossSentencePronoun) reasons.push('cross-sentence pronoun/reference');
+    if(signals.conditional) reasons.push('conditional or modal-perfect structure');
+    if(signals.participle) reasons.push('opening participle/modifier structure');
+    if(signals.temporal && (signals.priorTemporal || ctx.length>0)) reasons.push('possible tense/context dependency');
+    if(hasComplexClauseSignals(text)) reasons.push('complex clause structure');
+
+    // Context is useful only when there is actually something to compare against.
+    if(ctx.length>0 && (signals.crossSentencePronoun || (signals.temporal && signals.priorTemporal))){
+      reasons.push('recent sentence context available');
+    }
+
+    // Avoid escalating very short conversational fragments by themselves.
+    if(String(text).trim().split(/\s+/).length < 3 && reasons.length){
+      return {route:'local',reason:'short conversational fragment'};
+    }
+
+    if(reasons.length) return {route:'contextual',reason:[...new Set(reasons)].join('; ')};
+    return {route:'local',reason:'high-confidence local path'};
+  }
+  const incogBtn = document.getElementById('incogBtn');
+  const headerStatus = document.getElementById('headerStatus');
+  const themeColorMeta = document.getElementById('themeColorMeta');
+
+  const ACHIEVEMENTS = [
+    {id:'welcome', title:'Welcome to the Pond', desc:"Finish the first-launch setup and join Doki's pond.", type:'current'},
+    {id:'first-chat', title:'First Conversation', desc:'Send your first message to Doki.', type:'current'},
+    {id:'word-wanderer', title:'Word Wanderer', desc:'Use 100 words in your conversations.', type:'current'},
+    {id:'pond-collector', title:'Pond Collector', desc:'Earn your first Pond Point.', type:'pond'},
+    {id:'worm-hunter', title:'Worm Hunter', desc:'Collect your first worm.', type:'worm'},
+    {id:'grammar-starter', title:'Grammar Starter', desc:'Complete your first grammar correction.', type:'future'},
+    {id:'sharp-beak', title:'Sharp Beak', desc:'Get a perfect score in a grammar challenge.', type:'future'},
+    {id:'quick-thinker', title:'Quick Thinker', desc:'Answer a quiz correctly.', type:'future'},
+    {id:'learning-streak', title:'Learning Streak', desc:'Keep a learning streak alive across consecutive days.', type:'future'},
+    {id:'pond-treasure', title:'Pond Treasure', desc:'Reach a larger Pond Point milestone.', type:'future'},
+    {id:'doki-apprentice', title:'Doki Apprentice', desc:'Reach the Apprentice progression milestone.', type:'future'},
+    {id:'doki-master', title:'Doki Master', desc:'Reach the higher Doki mastery milestone.', type:'future'},
+    {id:'growing-doki', title:'Growing Doki', desc:'Unlock the next prepared Doki growth stage.', type:'future'},
+    {id:'super-duck', title:'Super Duck', desc:'Reach the final mature/legendary Doki growth stage.', type:'future'},
+    {id:'pond-legend', title:'Pond Legend', desc:"Become a top-tier learner in Doki's pond.", type:'future'}
+  ];
+
+  const profileModal = document.getElementById('profileModal');
+  const profileModalClose = document.getElementById('profileModalClose');
+  const leaderboardModal = document.getElementById('leaderboardModal');
+  const leaderboardModalClose = document.getElementById('leaderboardModalClose');
+  const leaderboardList = document.getElementById('leaderboardList');
+  const profileNameValue = document.getElementById('profileNameValue');
+  const profileXpValue = document.getElementById('profileXpValue');
+  const profileLevelValue = document.getElementById('profileLevelValue');
+  const profilePondValue = document.getElementById('profilePondValue');
+  const profileAchievementValue = document.getElementById('profileAchievementValue');
+  const profileProgressValue = document.getElementById('profileProgressValue');
+  const achievementsModal = document.getElementById('achievementsModal');
+  const achievementsModalClose = document.getElementById('achievementsModalClose');
+  const openAchievementsBtn = document.getElementById('openAchievementsBtn');
+  const achievementList = document.getElementById('achievementList');
+  const achievementSummaryCount = document.getElementById('achievementSummaryCount');
+  let leaderboardUnsubscribe = null;
+
+  function achievementEarned(id){
+    if(Array.isArray(player.achievements) && player.achievements.indexOf(id) !== -1) return true;
+    switch(id){
+      case 'welcome': return !!player.acceptedTerms;
+      case 'first-chat': return Number(player.messagesUsed) >= 1;
+      case 'word-wanderer': return Number(player.wordProgress) >= 100;
+      case 'pond-collector': return Number(player.pondPoints) >= 1;
+      case 'worm-hunter': return Number(player.worms) >= 1;
+      default: return false;
+    }
+  }
+
+  function syncAvailableAchievements(){
+    if(!Array.isArray(player.achievements)) player.achievements = [];
+    let changed = false;
+    ACHIEVEMENTS.forEach(function(item){
+      if(achievementEarned(item.id) && player.achievements.indexOf(item.id) === -1){
+        player.achievements.push(item.id);
+        changed = true;
+      }
+    });
+    if(changed) savePlayer();
+    return changed;
+  }
+
+  function duckTrophySVG(earned){
+    const opacity = earned ? '1' : '.42';
+    return '<svg viewBox="0 0 64 64" aria-hidden="true">' +
+      '<path d="M19 13h26v13c0 10-5 16-13 16S19 36 19 26V13Z" fill="#f5c242" stroke="#241f18" stroke-width="2" opacity="'+opacity+'"/>' +
+      '<path d="M19 19H9c0 9 5 13 13 11M45 19h10c0 9-5 13-13 11" fill="none" stroke="#241f18" stroke-width="3" stroke-linecap="round" opacity="'+opacity+'"/>' +
+      '<path d="M25 42h14v7H25z" fill="#707c5c" stroke="#241f18" stroke-width="2" opacity="'+opacity+'"/>' +
+      '<path d="M21 50h22v5H21z" fill="#e29227" stroke="#241f18" stroke-width="2" opacity="'+opacity+'"/>' +
+      '<circle cx="27" cy="24" r="2.2" class="trophy-duck-eye" opacity="'+opacity+'"/><circle cx="37" cy="24" r="2.2" class="trophy-duck-eye" opacity="'+opacity+'"/>' +
+      '<path d="M30 28h4l-2 3Z" class="trophy-duck-beak" opacity="'+opacity+'"/>' +
+      '<path d="M24 33c5 2 11 2 16 0" fill="none" stroke="#241f18" stroke-width="2" stroke-linecap="round" opacity="'+opacity+'"/>' +
+      '</svg>';
+  }
+
+  function refreshProfileModal(){
+    syncAvailableAchievements();
+    profileNameValue.textContent = player.username || '—';
+    profileXpValue.textContent = String(Math.max(0, Number(player.xp) || 0));
+    profileLevelValue.textContent = String(Math.max(1, Number(player.dokiLevel) || 1));
+    profilePondValue.textContent = String(Math.max(0, Number(player.pondPoints) || 0));
+    profileAchievementValue.textContent = String(Array.isArray(player.achievements) ? player.achievements.length : 0);
+    profileProgressValue.textContent = String(Math.max(0, Number(player.messagesUsed) || 0)) + ' messages';
+  }
+
+  function renderAchievements(){
+    syncAvailableAchievements();
+    const earnedCount = Array.isArray(player.achievements) ? player.achievements.length : 0;
+    achievementSummaryCount.textContent = earnedCount + ' / ' + ACHIEVEMENTS.length + ' trophies earned';
+    achievementList.innerHTML = '';
+    ACHIEVEMENTS.forEach(function(item){
+      const earned = player.achievements.indexOf(item.id) !== -1;
+      const card = document.createElement('div');
+      card.className = 'achievement-card ' + (earned ? 'earned' : 'locked');
+      card.innerHTML = '<div class="achievement-badge">' + duckTrophySVG(earned) + '</div>' +
+        '<div class="achievement-info"><div class="achievement-title">' + item.title + '</div><div class="achievement-desc">' + item.desc + '</div></div>' +
+        '<div class="achievement-status">' + (earned ? 'EARNED' : 'LOCKED') + '</div>' +
+        (earned ? '<div class="achievement-ribbon">QUACKED</div>' : '');
+      achievementList.appendChild(card);
+    });
+  }
+
+  function setModalOpen(modal, open){
+    if(!modal) return;
+    modal.classList.toggle('hidden', !open);
+    modal.setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+
+  function openAchievements(){
+    closeLeaderboard();
+    setModalOpen(profileModal, false);
+    renderAchievements();
+    setModalOpen(achievementsModal, true);
+  }
+  function closeAchievements(){ setModalOpen(achievementsModal, false); }
+
+  function closeLeaderboard(){
+    if(leaderboardUnsubscribe && firebaseAuthUser && window.firebase){
+      try { firebase.database().ref('players').off('value', leaderboardUnsubscribe); } catch(e) {}
+    }
+    leaderboardUnsubscribe = null;
+    setModalOpen(leaderboardModal, false);
+  }
+
+  function renderLeaderboard(snapshot){
+    const value = snapshot && snapshot.val ? snapshot.val() : null;
+    const entries = value && typeof value === 'object' ? Object.keys(value).map(function(uid){
+      const row = value[uid] || {};
+      return {
+        uid: uid,
+        username: typeof row.username === 'string' && row.username.trim() ? row.username.trim() : 'Anonymous Duck',
+        xp: Math.max(0, Number(row.xp) || 0),
+        dokiLevel: Math.max(1, Number(row.dokiLevel) || 1),
+        achievementCount: Math.max(0, Number(row.achievementCount) || 0)
+      };
+    }).sort(function(a,b){
+      return b.xp - a.xp || b.dokiLevel - a.dokiLevel || a.username.localeCompare(b.username);
+    }) : [];
+
+    if(!entries.length){
+      leaderboardList.innerHTML = '<div class="leader-empty">No players have arrived at the pond yet.</div>';
+      return;
+    }
+
+    leaderboardList.innerHTML = '';
+    entries.slice(0,50).forEach(function(entry, index){
+      const row = document.createElement('div');
+      row.className = 'leader-row' + (firebaseAuthUser && entry.uid === firebaseAuthUser.uid ? ' me' : '');
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : String(index + 1);
+      row.innerHTML = '<div class="leader-rank">' + medal + '</div>' +
+        '<div class="leader-name"></div>' +
+        '<div class="leader-xp">' + entry.xp + ' XP</div>' +
+        '<div class="leader-level">Lv ' + entry.dokiLevel + '</div>' +
+        '<div class="leader-trophies">🏆 ' + entry.achievementCount + '</div>';
+      row.querySelector('.leader-name').textContent = entry.username;
+      leaderboardList.appendChild(row);
+    });
+  }
+
+  async function waitForFirebaseReady(timeoutMs){
+    const started = Date.now();
+    while(Date.now() - started < timeoutMs){
+      if(firebaseReady && firebaseAuthUser && window.firebase) return true;
+      await new Promise(function(resolve){ setTimeout(resolve, 100); });
+    }
+    return Boolean(firebaseReady && firebaseAuthUser && window.firebase);
+  }
+
+  async function openLeaderboard(){
+    setModalOpen(profileModal, false);
+    setModalOpen(leaderboardModal, true);
+    leaderboardList.innerHTML = '<div class="leader-loading">Loading the pond rankings…</div>';
+    const ready = await waitForFirebaseReady(3000);
+    if(!ready){
+      leaderboardList.innerHTML = '<div class="leader-error">The shared pond is unavailable right now. Local Doki progress is still safe.</div>';
+      return;
+    }
+    try {
+      const ref = firebase.database().ref('players');
+      leaderboardUnsubscribe = function(snapshot){ renderLeaderboard(snapshot); };
+      ref.on('value', leaderboardUnsubscribe, function(error){
+        console.warn('Doki Duck AI: Leaderboard read failed.', error);
+        leaderboardList.innerHTML = '<div class="leader-error">Doki could not fetch the rankings right now.</div>';
+      });
+    } catch(error){
+      console.warn('Doki Duck AI: Leaderboard open failed.', error);
+      leaderboardList.innerHTML = '<div class="leader-error">The shared pond is unavailable right now.</div>';
+    }
+  }
+
+  const MAX_QUACKS = 15;
+  const DENIED_MESSAGE = "Well done son, Doki Duck AI is not for you because you don't deserve it. You deserve cheap AI tools like ChatGPT or Claude.";
+
+  let incognito = false;
+
+  function countWords(text){
+    return text.trim().split(/\s+/).filter(Boolean).length;
+  }
+
+  function quackCountFor(text){
+    const n = countWords(text);
+    if(n === 0) return 1;
+    return Math.min(n, MAX_QUACKS);
+  }
+
+  function buildQuackReply(count){
+    return Array(count).fill('Quack').join(' ') + ' 🦆';
+  }
+
+  function maskText(text){
+    return text.trim().split(/\s+/).map(w => '•'.repeat(Math.min(w.length, 8))).join(' ');
+  }
+
+  function scrollToBottom(){
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function botAvatarHTML(){
+    return '<div class="bot-mini">' +
+      '<img src="data:image/jpeg;base64,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" alt="">' +
+      '<div class="sunglasses"><svg viewBox="0 0 100 30">' +
+      '<rect x="2" y="4" width="34" height="20" rx="8" fill="#12111a"/>' +
+      '<rect x="64" y="4" width="34" height="20" rx="8" fill="#12111a"/>' +
+      '<rect x="36" y="11" width="28" height="5" rx="2.5" fill="#12111a"/>' +
+      '</svg></div></div>';
+  }
+
+  function addRow(text, who, denied){
+    const row = document.createElement('div');
+    row.className = 'row ' + who;
+
+    if(who === 'bot'){
+      row.insertAdjacentHTML('beforeend', botAvatarHTML());
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble' + (who === 'bot' ? ' quack-reply' : '');
+    if(denied) bubble.classList.add('denied');
+    bubble.textContent = text;
+    row.appendChild(bubble);
+
+    messagesEl.appendChild(row);
+    scrollToBottom();
+  }
+
+  function validateFutureGeminiResult(result, originalText){
+    // PASS 3C-B2/B3 safety shell: structured output, confidence, exact substring
+    // validation, protected terms, and minimal-edit distance.
+    const out={ok:false,status:'uncertain',confidence:0,corrections:[],reason:'invalid or uncertain result'};
+    if(!result || typeof result!=='object') return out;
+    if(!['clean','corrected','uncertain'].includes(result.status)) return out;
+    const confidence=Number(result.confidence);
+    if(!Number.isFinite(confidence) || confidence<0 || confidence>1) return out;
+
+    out.status=result.status;
+    out.confidence=confidence;
+
+    if(result.status==='clean'){
+      out.ok=confidence>=0.85;
+      out.corrections=[];
+      out.reason='clean';
+      return out;
+    }
+
+    if(result.status==='uncertain'){
+      out.ok=false;
+      out.corrections=[];
+      out.reason='uncertain';
+      return out;
+    }
+
+    if(!Array.isArray(result.corrections) || !result.corrections.length) return out;
+
+    const original=String(originalText||'');
+    const protectedTerms=['doki','doki duck','doki duck ai','doki grammar police','pond points','pond leaderboard','trophy room'];
+    const cleanTerm=function(v){
+      return String(v||'').toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/g,'').replace(/'s$/,'');
+    };
+
+    const accepted=[];
+    for(const c of result.corrections){
+      if(!c || typeof c!=='object') return out;
+
+      const a=String(c.original||'').trim();
+      const b=String(c.replacement||'').trim();
+      if(!a || !b || a===b) return out;
+      if(protectedTerms.includes(cleanTerm(a)) || protectedTerms.includes(cleanTerm(b))) return out;
+
+      const span=exactSpanFor(original,a);
+      if(!span) return out;
+
+      const distance=levenshteinDistance(a,b);
+      const maxDistance=Math.max(6, Math.ceil(Math.max(a.length,b.length)*0.35));
+      if(distance > maxDistance) return out;
+      if(a.length>40 || b.length>40) return out;
+
+      accepted.push({
+        original:a,
+        replacement:b,
+        reason:String(c.reason||''),
+        category:String(c.category||'Grammar / sentence structure')
+      });
+    }
+
+    if(!accepted.length || confidence<0.85) return out;
+
+    out.ok=true;
+    out.corrections=accepted;
+    out.reason='validated';
+    return out;
+  }
+
+  async function checkGrammarForStage3A(text, contextBefore){
+    if(!text || !text.trim()) return null;
+    try {
+      const activeLinter = window.dokiHarper && window.dokiHarper.linter;
+      if(!activeLinter){
+        dokiLastRoute='local';
+        dokiLastRouteReason='Harper unavailable; no cloud escalation in 3C-B1';
+        if(grammarStatusEl){
+          grammarStatusEl.className='grammar-status offline';
+          grammarStatusEl.textContent='⚠ Grammar engine unavailable · chat still works';
+        }
+        return null;
+      }
+
+      if(grammarStatusEl){
+        grammarStatusEl.className='grammar-status scan';
+        grammarStatusEl.textContent='Grammar scan…';
+      }
+      hideGrammarLearningPanel();
+
+      const ready = await (window.dokiHarperReady || Promise.resolve(activeLinter));
+      if(!ready){
+        if(grammarStatusEl){
+          grammarStatusEl.className='grammar-status offline';
+          grammarStatusEl.textContent='⚠ Grammar engine unavailable · chat still works';
+        }
+        return null;
+      }
+
+      const lints = await activeLinter.lint(text);
+      const safeLints = Array.isArray(lints) ? lints : [];
+      const route=getDokiEscalation(text, contextBefore || [], safeLints);
+      const properNounRisk=hasProperNounRisk(text,safeLints);
+
+      dokiLastRoute = route.route;
+      dokiLastRouteReason = route.reason + (properNounRisk ? '; possible proper noun/spelling ambiguity' : '');
+
+      window.dokiGrammarRouting={
+        route: (route.route === 'contextual' || properNounRisk) ? 'contextual' : 'local',
+        reason:dokiLastRouteReason,
+        context:contextBefore || [],
+        timestamp:Date.now()
+      };
+
+      // PASS 3C-B3: Gemini is a secondary verifier, never the primary checker.
+      const contextualEscalation = route.route === 'contextual';
+      const shouldEscalate = contextualEscalation || properNounRisk;
+      if(!shouldEscalate) return safeLints;
+
+      const verified=await runDokiGeminiVerifier(
+        text,
+        contextBefore || [],
+        safeLints,
+        dokiLastRouteReason
+      );
+
+      // Safe fallback: never expose unresolved Harper findings merely because the
+      // secondary verifier is unavailable. Proper-name spelling findings are also
+      // suppressed in the same path to prevent false corrections such as
+      // “Sagnik → Sank”.
+      const merged = mergeGeminiResultIntoLints(
+        text,
+        safeLints,
+        verified,
+        properNounRisk,
+        contextualEscalation
+      );
+      if(!verified || !verified.ok) merged.dokiReviewStatus='uncertain';
+      else if(verified.status==='uncertain') merged.dokiReviewStatus='uncertain';
+      else if(verified.status==='clean') merged.dokiReviewStatus='clean';
+      else merged.dokiReviewStatus='corrected';
+      return merged;
+    } catch (error) {
+      console.warn('Doki Duck AI: Grammar scan failed. Continuing without grammar feedback.', error);
+      return null;
+    }
+  }
+
+  function safeLintMessage(lint){
+    try { return typeof lint.message === 'function' ? String(lint.message()) : 'Grammar issue detected.'; }
+    catch(e){ return 'Grammar issue detected.'; }
+  }
+
+  function safeProblemText(lint){
+    try { return typeof lint.get_problem_text === 'function' ? String(lint.get_problem_text()) : ''; }
+    catch(e){ return ''; }
+  }
+
+  function safeLintKind(lint){
+    try {
+      if(typeof lint.lint_kind_pretty === 'function') return String(lint.lint_kind_pretty());
+      if(typeof lint.lint_kind === 'function') return String(lint.lint_kind());
+    } catch(e) {}
+    return 'Grammar';
+  }
+
+  function safeSuggestions(lint){
+    try { return typeof lint.suggestions === 'function' ? lint.suggestions() : []; }
+    catch(e){ return []; }
+  }
+
+  function safeSuggestionText(suggestion){
+    try { return typeof suggestion.get_replacement_text === 'function' ? String(suggestion.get_replacement_text()) : ''; }
+    catch(e){ return ''; }
+  }
+
+  function classifyDokiRule(message, kind, problemText, replacement){
+    const hay = (String(message) + ' ' + String(kind) + ' ' + String(problemText)).toLowerCase();
+    if(/subject.?verb|agreement|third person|singular/.test(hay)) return 'Subject–verb agreement';
+    if(/auxiliary|helping verb|modal/.test(hay)) return 'Auxiliary verb';
+    if(/tense|past|present|future|verb form/.test(hay)) return 'Verb tense / form';
+    if(/article|a\s+vs\s+an|an\s+a/.test(hay)) return 'Articles';
+    if(/pronoun/.test(hay)) return 'Pronouns';
+    // Harper has occasionally surfaced a generic/preposition-labelled finding
+    // on an isolated copular verb such as “was”. Do not repeat that misleading
+    // category in the Doki UI when there is no actual preposition token.
+    if(/^\s*(?:am|is|are|was|were|be|been|being)\s*$/i.test(String(problemText||'')) && !replacement){
+      return 'Contextual / unresolved grammar';
+    }
+    if(/preposition/.test(hay)) return 'Prepositions';
+    if(/punctuat|comma|apostrophe|quotation|period/.test(hay)) return 'Punctuation';
+    if(/spell|spelling|misspell/.test(hay)) return 'Spelling';
+    if(replacement && problemText && /\b(is|are|was|were|has|have|does|do|go|goes|like|likes|want|wants|need|needs)\b/i.test(problemText + ' ' + replacement)) return 'Verb / sentence structure';
+    return kind || 'Grammar';
+  }
+
+  function explainDokiRule(rule, problemText, replacement, message){
+    const p = problemText || 'the highlighted part';
+    switch(rule){
+      case 'Subject–verb agreement':
+        return 'The subject and verb need to agree in number. Singular subjects often take a singular verb form.';
+      case 'Auxiliary verb':
+        return 'After a helping verb such as "doesn\'t", "don\'t", or "didn\'t", the main verb normally stays in its base form.';
+      case 'Verb tense / form':
+        return 'The verb form does not match the time or grammatical structure of the sentence. Keep the tense consistent with the meaning.';
+      case 'Articles':
+        return 'English articles such as “a”, “an”, and “the” depend on the noun and the way it is being introduced.';
+      case 'Pronouns':
+        return 'The pronoun should clearly match the person or thing being referred to and fit the sentence structure.';
+      case 'Prepositions':
+        return 'The preposition needs to match the relationship expressed by the sentence, such as time, place, direction, or connection.';
+      case 'Contextual / unresolved grammar':
+        return 'Doki could not safely verify this finding in context, so it will not invent a correction.';
+      case 'Punctuation':
+        return 'A punctuation mark is affecting how the sentence should be separated or read.';
+      case 'Spelling':
+        return 'This word appears to have a spelling problem. Doki has located the suspicious part for you.';
+      default:
+        return message ? String(message).replace(/<[^>]*>/g, '') : 'Doki found a grammar problem in this part of the sentence.';
+    }
+  }
+
+  async function buildCorrectedText(text, lints){
+    let corrected = String(text);
+    const edits = [];
+    for(const lint of lints){
+      let span;
+      try { span = typeof lint.span === 'function' ? lint.span() : null; } catch(e){ span = null; }
+      const suggestions = safeSuggestions(lint);
+      if(!span || !suggestions || !suggestions.length) continue;
+      const replacement = safeSuggestionText(suggestions[0]);
+      if(typeof span.start !== 'number' || typeof span.end !== 'number') continue;
+      edits.push({start:span.start,end:span.end,replacement});
+    }
+    edits.sort((a,b)=>b.start-a.start);
+    for(const edit of edits){
+      corrected = corrected.slice(0,edit.start) + edit.replacement + corrected.slice(edit.end);
+    }
+    return corrected;
+  }
+
+  function buildDokiFallbackLints(text, existingLints){
+    const out=[];
+    const source=String(text || '');
+    const existing=Array.isArray(existingLints) ? existingLints : [];
+
+    function spanOf(l){
+      try { return (l && typeof l.span === 'function') ? l.span() : null; } catch(e){ return null; }
+    }
+    function suggestionOf(l){
+      try {
+        if(l && typeof l.replacement === 'string' && l.replacement.trim()) return l.replacement.trim();
+        const suggestions=safeSuggestions(l);
+        return suggestions.length ? safeSuggestionText(suggestions[0]).trim() : '';
+      } catch(e){ return ''; }
+    }
+    function overlapsExisting(start,end){
+      return existing.some(function(l){
+        const sp=spanOf(l);
+        return sp && !(end<=sp.start || start>=sp.end);
+      });
+    }
+    function existingSuggestionOverlaps(start,end){
+      return existing.some(function(l){
+        const sp=spanOf(l);
+        return sp && !(end<=sp.start || start>=sp.end) && !!suggestionOf(l);
+      });
+    }
+    function add(start,end,problem,replacement,rule,why){
+      if(!problem || !replacement || problem.trim().toLowerCase()===replacement.trim().toLowerCase()) return;
+      if(existingSuggestionOverlaps(start,end)) return;
+      if(out.some(function(x){ return x.start===start && x.end===end; })) return;
+      out.push({start,end,span:function(){return {start,end};},problem,replacement,rule,why});
+    }
+
+    const irregularPast={
+      go:'went', be:'was', have:'had', see:'saw', take:'took', eat:'ate', come:'came', run:'ran',
+      write:'wrote', give:'gave', make:'made', know:'knew', think:'thought', bring:'brought', buy:'bought',
+      find:'found', get:'got', say:'said', tell:'told', do:'did', read:'read', sleep:'slept', feel:'felt',
+      keep:'kept', leave:'left', come:'came', begin:'began', become:'became', choose:'chose', drive:'drove'
+    };
+    const baseVerbWhitelist=new Set([
+      'go','want','like','love','need','work','play','walk','run','talk','feel','think','know','look','come','live','study','watch','listen','read','write','wait','help','try','believe','hope','agree','understand','remember','forget','start','stop','use','make','take','give','tell','ask','answer','laugh','cry','smile','dance','sing','cook','drive','eat','drink','sleep','open','close','clean','buy','sell','pay','call','text','share','follow','miss','hate','enjoy','prefer','plan','decide','choose','learn','teach','explain','discuss','fight','win','lose','practice','train','exercise','swim','jump','climb','build','fix','break','create','design','draw','paint','quack','see','have'
+    ]);
+    const protectedNames=['doki','doki duck','doki duck ai','doki grammar police','pond points','pond leaderboard','trophy room'];
+    function isProtected(word){
+      const clean=String(word||'').trim().toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/g,'').replace(/'s$/,'');
+      return protectedNames.includes(clean);
+    }
+    function thirdPerson(v){
+      if(/(?:ch|sh)$/i.test(v) || /[sxz]$/i.test(v) || /[^aeiou]o$/i.test(v)) return v+'es';
+      if(/[^aeiou]y$/i.test(v)) return v.slice(0,-1)+'ies';
+      return v+'s';
+    }
+    function timeCueAt(pos){
+      const ctx=(source.slice(Math.max(0,pos-70),pos)+' '+source.slice(pos,Math.min(source.length,pos+90))).toLowerCase();
+      return /\b(yesterday|last\s+(?:night|week|month|year|day)|\d+\s+(?:days?|weeks?|months?|years?)\s+ago|earlier|previously|the\s+day\s+before)\b/.test(ctx);
+    }
+
+    // 1) Auxiliary + inflected verb. These are high-confidence because the auxiliary itself constrains the main verb.
+    const aux=/\b(doesn['’]t|does not|don['’]t|do not|didn['’]t|did not|can['’]t|cannot|won['’]t|will not|shouldn['’]t|should not|couldn['’]t|could not|wouldn['’]t|would not|mustn['’]t|must not)\s+([A-Za-z]+)\b/gi;
+    let m;
+    while((m=aux.exec(source))){
+      const auxText=m[1], verb=m[2];
+      let base='';
+      const low=verb.toLowerCase();
+      const irregular={went:'go',gone:'go',was:'be',were:'be',ate:'eat',eaten:'eat',saw:'see',seen:'see',did:'do',done:'do',had:'have',made:'make',took:'take',taken:'take',came:'come',ran:'run',wrote:'write',written:'write',knew:'know',known:'know',thought:'think',brought:'bring',bought:'buy',gave:'give',felt:'feel',slept:'sleep',left:'leave',found:'find'};
+      if(/^didn(?:'|’)t$|^did not$/i.test(auxText) && irregular[low]) base=irregular[low];
+      else if(/ies$/i.test(verb)) base=verb.slice(0,-3)+'y';
+      else if(/(?:ches|shes|xes|zes|oes|sses)$/i.test(verb)) base=verb.slice(0,-2);
+      else if(/s$/i.test(verb) && !/ss$/i.test(verb)) base=verb.slice(0,-1);
+      if(base && base.toLowerCase()!==low){
+        const start=m.index+m[0].lastIndexOf(verb);
+        add(start,start+verb.length,verb,base,'Auxiliary verb','After a helping verb such as “doesn’t”, “don’t”, or “didn’t”, the main verb normally stays in its base form.');
+      }
+    }
+
+    // 2) Subject + auxiliary agreement.
+    const auxAgree=/\b(he|she|it|they|we|you)\s+(doesn['’]t|does not|don['’]t|do not|is|are|was|were|has|have)\b/gi;
+    while((m=auxAgree.exec(source))){
+      const subject=m[1].toLowerCase(), wrong=m[2];
+      let replacement='';
+      if(/^(he|she|it)$/.test(subject)){
+        const map={"don't":"doesn't",'do not':'does not',are:'is',were:'was',have:'has'};
+        replacement=map[wrong.toLowerCase()]||'';
+      }else{
+        const map={"doesn't":"don't",'does not':'do not',is:'are',was:'were',has:'have'};
+        replacement=map[wrong.toLowerCase()]||'';
+      }
+      if(replacement){
+        const start=m.index+m[0].lastIndexOf(wrong);
+        add(start,start+wrong.length,wrong,replacement,'Subject–verb agreement','The subject and verb should agree in number and person.');
+      }
+    }
+
+    // 3) Bare he/she/it + common base verb. Keep a curated list for high confidence.
+    const bare=/\b(he|she|it)\s+([A-Za-z]+)\b/gi;
+    while((m=bare.exec(source))){
+      const subject=m[1].toLowerCase(), verb=m[2], low=verb.toLowerCase();
+      if(!baseVerbWhitelist.has(low) || isProtected(verb)) continue;
+      if(['is','has','does','was','were','can','will','would','could','should','may','might','must'].includes(low)) continue;
+      const start=m.index+m[0].lastIndexOf(verb);
+      let replacement='';
+      let why='A singular subject like “he”, “she”, or “it” normally pairs with the third-person -s form of the verb.';
+      if(low==='have') replacement='has';
+      else if(timeCueAt(m.index) && irregularPast[low]){
+        replacement=irregularPast[low];
+        why='The time expression suggests a past-tense form, so Doki uses the corresponding past-tense verb.';
+      }else replacement=thirdPerson(verb);
+      add(start,start+verb.length,verb,replacement,'Subject–verb agreement',why);
+    }
+
+    // 4) High-confidence plural subject + third-person singular verb.
+    // Avoid the old broad `word ending in s` heuristic: singular nouns such as
+    // class, bus, news and glass must never be treated as plural automatically.
+    const pluralNounSet=new Set([
+      'friends','ducks','students','children','people','men','women','parents','teachers','players',
+      'brothers','sisters','dogs','cats','birds','animals','users','players','workers','teams',
+      'families','stories','countries','games','books','cars','phones','days','weeks','months',
+      'years','students','teachers','siblings','parents','friends'
+    ]);
+    const plural=/\b(?:my|your|our|their|these|those|the|many|several|two|three|four|five|both)\s+([A-Za-z][A-Za-z'-]*)\s+([A-Za-z]+s)\b/gi;
+    while((m=plural.exec(source))){
+      const subject=m[1], verb=m[2], low=verb.toLowerCase();
+      const subjectLow=subject.toLowerCase();
+      if(!pluralNounSet.has(subjectLow)) continue;
+      if(/'s$/i.test(subject) || /ss$/i.test(low)) continue;
+      if(['is','was','has','does'].includes(low)) continue;
+      if(isProtected(subject) || isProtected(verb)) continue;
+      let base=verb.slice(0,-1);
+      if(/(?:ches|shes|xes|zes|oes|sses)$/i.test(verb)) base=verb.slice(0,-2);
+      else if(/ies$/i.test(verb)) base=verb.slice(0,-3)+'y';
+      const start=m.index+m[0].lastIndexOf(verb);
+      add(start,start+verb.length,verb,base,'Subject–verb agreement','The subject is plural here, so the verb normally uses its base form rather than the singular third-person form.');
+    }
+
+    return out;
+  }
+
+
+  function hideGrammarLearningPanel(){
+    if(!grammarLearningPanel) return;
+    grammarLearningPanel.classList.remove('visible');
+    grammarLearningPanel.setAttribute('aria-hidden','true');
+    if(grammarLearningBody) grammarLearningBody.innerHTML='';
+  }
+
+  function showGrammarLearningPanel(){
+    if(!grammarLearningPanel) return;
+    grammarLearningPanel.classList.add('visible');
+    grammarLearningPanel.setAttribute('aria-hidden','false');
+    requestAnimationFrame(function(){ if(grammarLearningBody) grammarLearningBody.scrollTop=0; });
+  }
+
+  function appendGrammarLearningCard(text, lints){
+    if(!grammarLearningBody || !Array.isArray(lints) || !lints.length) return;
+    const card=document.createElement('div');
+    card.className='grammar-card'+(lints.length>1?' multi':'');
+    const head=document.createElement('div'); head.className='grammar-card-head';
+    head.innerHTML='<span class="grammar-badge">🚨</span><span class="grammar-card-title">Doki Grammar Police</span>'; card.appendChild(head);
+    const body=document.createElement('div'); body.className='grammar-card-body';
+    const intro=document.createElement('div'); intro.className='grammar-original';
+    intro.innerHTML='<strong>Found in:</strong> <code></code>';
+    intro.querySelector('code').textContent=lints.map(function(x){return x.problem || safeProblemText(x);}).filter(Boolean).slice(0,8).join(' · ') || 'the sentence';
+    body.appendChild(intro);
+    const intro2=document.createElement('div'); intro2.className='grammar-doki';
+    const firstRule = lints[0].rule || classifyDokiRule(lints[0].message || safeLintMessage(lints[0]), lints[0].rule || safeLintKind(lints[0]), lints[0].problem || safeProblemText(lints[0]), lints[0].replacement || '');
+    const quip = lints.length>1 ? 'Multiple grammar crimes. Doki has opened a full investigation.' : (firstRule==='Subject–verb agreement' || firstRule==='Auxiliary verb' || /verb/i.test(firstRule) ? 'Doki has arrested the verb for agreeing with absolutely nobody.' : 'Doki found something suspicious. The duck investigation is underway.');
+    intro2.textContent='Found '+lints.length+' issue'+(lints.length===1?'':'s')+'. '+quip;
+    body.appendChild(intro2);
+    lints.forEach(function(lint,index){
+      const problem=lint.problem || safeProblemText(lint);
+      const replacement=lint.replacement!=null ? String(lint.replacement) : '';
+      const message=lint.message || safeLintMessage(lint);
+      const kind=lint.rule || safeLintKind(lint);
+      const rule=lint.rule || classifyDokiRule(message,kind,problem,replacement);
+      const explanation=lint.why || explainDokiRule(rule,problem,replacement,message);
+      const issue=document.createElement('div'); issue.className='grammar-issue';
+      issue.style.marginTop='10px'; issue.style.padding='9px'; issue.style.border='1px solid #d0c7b8'; issue.style.borderRadius='12px';
+      issue.innerHTML='<div style="font-weight:900;font-size:11px;margin-bottom:5px">Issue '+(index+1)+'</div>'+
+        '<div class="grammar-correction"><div class="grammar-correction-label">Correction</div><div class="grammar-correction-text"></div></div>'+
+        '<div class="grammar-explain"></div><div class="grammar-rule"></div>';
+      issue.querySelector('.grammar-correction-text').textContent=replacement ? problem+' → '+replacement : 'Doki detected a grammar issue, but Harper did not provide a confident replacement.';
+      issue.querySelector('.grammar-explain').textContent=explanation;
+      issue.querySelector('.grammar-rule').textContent=rule;
+      body.appendChild(issue);
+    });
+    const feedback=document.createElement('div'); feedback.className='grammar-feedback';
+    feedback.innerHTML='<span>Was this explanation useful?</span><button type="button">👍</button><button type="button">👎</button>';
+    const fb=feedback.querySelectorAll('button');
+    fb[0].addEventListener('click',function(){feedback.querySelector('span').textContent='Thanks. Doki will pretend to value your opinion.';});
+    fb[1].addEventListener('click',function(){feedback.querySelector('span').textContent='Feedback noted. Doki remains suspicious.';});
+    body.appendChild(feedback);
+    card.appendChild(body);
+    grammarLearningBody.innerHTML='';
+    grammarLearningBody.appendChild(card);
+    showGrammarLearningPanel();
+  }
+
+  function normalizeGrammarLint(lint, sourceText){
+    const problem = (lint && lint.problem) ? String(lint.problem) : safeProblemText(lint);
+    let replacement = '';
+    if(lint && lint.replacement != null) replacement = String(lint.replacement);
+    else {
+      const suggestions = safeSuggestions(lint);
+      if(suggestions.length) replacement = safeSuggestionText(suggestions[0]);
+    }
+    const rawMessage = safeLintMessage(lint);
+    const rawKind = safeLintKind(lint);
+    const rule = (lint && lint.rule) ? String(lint.rule) : classifyDokiRule(rawMessage, rawKind, problem, replacement);
+    const why = (lint && lint.why) ? String(lint.why) : explainDokiRule(rule, problem, replacement, rawMessage);
+    return { problem: problem || 'the highlighted part', replacement: replacement || '', rule: rule || 'Grammar / sentence structure', why: why || 'Doki found a grammar issue in this part of the sentence.' };
+  }
+
+
+  function spanOfLint(lint){
+    try { return (lint && typeof lint.span==='function') ? lint.span() : null; } catch(e){ return null; }
+  }
+  function suggestionOfLint(lint){
+    try {
+      if(lint && typeof lint.replacement==='string' && lint.replacement.trim()) return lint.replacement.trim();
+      const suggestions=safeSuggestions(lint);
+      return suggestions.length ? safeSuggestionText(suggestions[0]).trim() : '';
+    } catch(e){ return ''; }
+  }
+
+  function showGrammarStage3BResult(lints, originalText, scanToken){
+    if(scanToken != null && scanToken !== grammarScanToken) return;
+    if(!grammarStatusEl) return;
+    if(!Array.isArray(lints)){
+      grammarStatusEl.className='grammar-status offline';
+      grammarStatusEl.textContent='⚠ Grammar engine unavailable · chat still works';
+      hideGrammarLearningPanel();
+      return;
+    }
+
+    const protectedTerms=['doki','doki duck','doki duck ai','doki grammar police','pond points','trophy room','pond leaderboard'];
+    const contextualEscalation = !!(Array.isArray(lints) && lints.dokiReviewStatus === 'uncertain');
+    const filtered=lints.filter(function(lint){
+      const p=safeProblemText(lint).trim().toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/g,'').replace(/'s$/,'');
+      return !protectedTerms.includes(p) && sanitizeGrammarLint(originalText, lint, contextualEscalation);
+    });
+
+    // Doki fallback is deliberately run against the raw Harper findings. It can
+    // supply a high-confidence replacement when Harper reports a problem but
+    // returns no suggestion. It must never replace a confident Harper suggestion.
+    const fallback=buildDokiFallbackLints(originalText,filtered);
+    const combined=[];
+    function addNormalized(item){
+      if(!item) return;
+      const n=normalizeGrammarLint(item,originalText);
+      if(!n.problem) return;
+      const duplicate=combined.some(function(x){
+        return x.problem.trim().toLowerCase()===n.problem.trim().toLowerCase() &&
+          x.replacement.trim().toLowerCase()===n.replacement.trim().toLowerCase() &&
+          x.rule===n.rule;
+      });
+      if(!duplicate) combined.push(n);
+    }
+
+    // Prefer a confident Harper suggestion. Otherwise, prefer a high-confidence
+    // Doki fallback occupying the same span. This is the critical Pass 3B merge.
+    filtered.forEach(function(lint){
+      const existingReplacement=suggestionOfLint(lint);
+      if(existingReplacement){
+        addNormalized(lint);
+        return;
+      }
+      const sp=spanOfLint(lint);
+      const matching=fallback.find(function(f){
+        const fp=f.span();
+        return sp && fp && !(fp.end<=sp.start || fp.start>=sp.end);
+      });
+      if(matching) addNormalized(matching);
+      else addNormalized(lint);
+    });
+
+    // Also include Doki-only high-confidence findings that Harper missed entirely.
+    fallback.forEach(function(f){
+      const fp=f.span();
+      const already=combined.some(function(x){
+        return x.problem.trim().toLowerCase()===f.problem.trim().toLowerCase() &&
+          x.replacement.trim().toLowerCase()===f.replacement.trim().toLowerCase();
+      });
+      const hasConfidentHarper=filtered.some(function(l){
+        const sp=spanOfLint(l);
+        return sp && fp && !(fp.end<=sp.start || fp.start>=sp.end) && !!suggestionOfLint(l);
+      });
+      if(!already && !hasConfidentHarper) addNormalized(f);
+    });
+
+    // Never display an unresolved Harper message when a same-span Doki fallback
+    // has a safe correction. This second safety net also protects against odd
+    // Harper span objects or normalization differences.
+    for(const item of combined){
+      if(item.replacement) continue;
+      const candidate=fallback.find(function(f){
+        return f.problem && item.problem && f.problem.trim().toLowerCase()===item.problem.trim().toLowerCase() && f.replacement;
+      });
+      if(candidate){
+        item.replacement=candidate.replacement;
+        item.rule=candidate.rule;
+        item.why=candidate.why;
+      }
+    }
+
+    // Final defensive pass. This runs after both Harper and Gemini have had a chance
+    // to contribute, so neither backend can reintroduce a known false category/name.
+    const finalCombined=combined.filter(function(item){
+      return sanitizeGrammarLint(originalText, item, contextualEscalation);
+    });
+
+    if(finalCombined.length===0){
+      hideGrammarLearningPanel();
+      if(lints.dokiReviewStatus === 'uncertain'){
+        grammarStatusEl.className='grammar-status clean';
+        grammarStatusEl.textContent='✓ No safe correction found — Doki kept your sentence unchanged';
+      }else{
+        grammarStatusEl.className='grammar-status clean';
+        grammarStatusEl.textContent='✓ Grammar scan clean';
+      }
+      return;
+    }
+
+    grammarStatusEl.className='grammar-status issue';
+    grammarStatusEl.textContent='⚠ Grammar scan found '+finalCombined.length+' issue'+(finalCombined.length===1?'':'s');
+    try{
+      appendGrammarLearningCard(originalText,finalCombined);
+    }catch(error){
+      console.warn('Doki Duck AI: Grammar result UI failed.',error);
+      hideGrammarLearningPanel();
+      grammarStatusEl.textContent='⚠ Grammar issues found, but the learning panel could not render.';
+    }
+  }
+
+  async function handleSend(){
+    const raw = inputEl.value;
+    if(!raw.trim()) return;
+
+    if(incognito){
+      addRow(maskText(raw), 'user');
+      inputEl.value = '';
+      meterEl.innerHTML = '&nbsp;';
+      setTimeout(function(){
+        player.messagesUsed = (player.messagesUsed || 0) + 1; syncAvailableAchievements(); savePlayer();
+        addRow(DENIED_MESSAGE, 'bot', true);
+      }, 280);
+      return;
+    }
+
+    addRow(raw, 'user');
+    player.messagesUsed = (player.messagesUsed || 0) + 1;
+    player.wordProgress = (player.wordProgress || 0) + countWords(raw);
+    syncAvailableAchievements();
+    savePlayer();
+    const count = quackCountFor(raw);
+    const contextBefore=getDokiContext();
+    addDokiContext(raw);
+
+    // Clear the input BEFORE setting the scan state. The input handler normally
+    // clears the meter when the field becomes empty; doing it in the opposite
+    // order was silently erasing the grammar result in the previous build.
+    inputEl.value = '';
+    meterEl.innerHTML = '<span class="grammar-scan-status">Grammar scan…</span>';
+
+    // Pass 3B adds local correction/explanation/learning UI. Pond Points are still not awarded here; that belongs to Pass 3C.
+    const thisGrammarScan=++grammarScanToken;
+    void checkGrammarForStage3A(raw, contextBefore).then(function(lints){ showGrammarStage3BResult(lints, raw, thisGrammarScan); });
+
+    setTimeout(function(){
+      addRow(buildQuackReply(count), 'bot');
+    }, 260);
+  }
+
+  sendBtn.addEventListener('click', handleSend);
+  inputEl.addEventListener('keydown', function(e){
+    if(e.key === 'Enter') handleSend();
+  });
+
+  inputEl.addEventListener('input', function(){
+    if(incognito){
+      meterEl.innerHTML = '&nbsp;';
+      return;
+    }
+    const n = countWords(inputEl.value);
+    if(n === 0){
+      meterEl.innerHTML = '&nbsp;';
+      return;
+    }
+    const capped = Math.min(n, MAX_QUACKS);
+    const capNote = n > MAX_QUACKS ? ' (capped)' : '';
+    meterEl.innerHTML = n + ' word' + (n===1?'':'s') + ' &rarr; <b>' + capped + ' quack' + (capped===1?'':'s') + capNote + '</b>';
+  });
+
+  function setIncognito(on){
+    incognito = on;
+    hideGrammarLearningPanel();
+    grammarScanToken++;
+    clearDokiContext();
+    phone.classList.toggle('incognito', on);
+    inputEl.type = on ? 'password' : 'text';
+    inputEl.placeholder = on ? 'Type anything… (hidden)' : 'Type anything…';
+    inputEl.value = '';
+    meterEl.innerHTML = '&nbsp;';
+    headerStatus.innerHTML = on
+      ? '<span class="dot"></span> incognito mode — trust issues'
+      : '<span class="dot"></span> knows exactly one word';
+    themeColorMeta.setAttribute('content', on ? '#1c1b24' : '#707C5C');
+
+    const note = document.createElement('div');
+    note.className = 'system-note';
+    note.textContent = on
+      ? '🕵️ Incognito mode on — Doki can\'t see what you type anymore.'
+      : '☀️ Incognito mode off — back to normal quacking.';
+    messagesEl.appendChild(note);
+    scrollToBottom();
+  }
+
+  incogBtn.addEventListener('click', function(){
+    setIncognito(!incognito);
+  });
+
+  function updateDokiMenuSummary(){
+    if(!dokiMenuProfileName || !dokiMenuProfileMeta) return;
+    dokiMenuProfileName.textContent = player.username || 'Your Doki';
+    dokiMenuProfileMeta.textContent = 'Level ' + Math.max(1, Number(player.dokiLevel) || 1) + ' · ' + Math.max(0, Number(player.xp) || 0) + ' XP';
+  }
+
+  let dokiMenuOpen = false;
+  function setDokiMenuOpen(open){
+    dokiMenuOpen = !!open;
+    dokiMenuPanel.classList.toggle('open', dokiMenuOpen);
+    dokiMenuBackdrop.classList.toggle('hidden', !dokiMenuOpen);
+    dokiMenuPanel.setAttribute('aria-hidden', dokiMenuOpen ? 'false' : 'true');
+    dokiMenuBackdrop.setAttribute('aria-hidden', dokiMenuOpen ? 'false' : 'true');
+    menuTrigger.setAttribute('aria-expanded', dokiMenuOpen ? 'true' : 'false');
+    if(dokiMenuOpen) updateDokiMenuSummary();
+  }
+
+  menuTrigger.addEventListener('click', function(){ setDokiMenuOpen(!dokiMenuOpen); });
+  dokiMenuClose.addEventListener('click', function(){ setDokiMenuOpen(false); });
+  dokiMenuBackdrop.addEventListener('click', function(){ setDokiMenuOpen(false); });
+
+  menuProfileBtn.addEventListener('click', function(){
+    setDokiMenuOpen(false);
+    closeLeaderboard();
+    closeAchievements();
+    refreshProfileModal();
+    setModalOpen(profileModal, true);
+  });
+  menuTrophyBtn.addEventListener('click', function(){
+    setDokiMenuOpen(false);
+    openAchievements();
+  });
+  menuLeaderboardBtn.addEventListener('click', function(){
+    setDokiMenuOpen(false);
+    openLeaderboard();
+  });
+
+
+  profileModalClose.addEventListener('click', function(){ setModalOpen(profileModal, false); });
+  openAchievementsBtn.addEventListener('click', openAchievements);
+  achievementsModalClose.addEventListener('click', closeAchievements);
+  leaderboardModalClose.addEventListener('click', closeLeaderboard);
+  profileModal.addEventListener('click', function(e){ if(e.target === profileModal) setModalOpen(profileModal, false); });
+  achievementsModal.addEventListener('click', function(e){ if(e.target === achievementsModal) closeAchievements(); });
+  leaderboardModal.addEventListener('click', function(e){ if(e.target === leaderboardModal) closeLeaderboard(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){
+      setDokiMenuOpen(false);
+      setModalOpen(profileModal, false);
+      closeAchievements();
+      closeLeaderboard();
+    }
+  });
+
+})();
+</script>
+
+
+
+</body>
+</html>
