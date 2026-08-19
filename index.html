@@ -908,7 +908,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     } catch(error) {
       firebaseReady = false;
       firebaseAuthUser = null;
-      console.warn('Doki Duck AI: Firebase is unavailable. Continuing in local-only mode.', error);
+      const guidance = (typeof appCheckConsoleGuidance === 'function') ? appCheckConsoleGuidance(error) : '';
+      console.warn('Doki Duck AI: Firebase is unavailable. Continuing in local-only mode.', error, guidance || '(no console guidance for this error code)');
     }
   }
 
@@ -1398,12 +1399,35 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     }
   }
 
+  // Maps a known Firebase App Check / reCAPTCHA Enterprise error code to the exact
+  // Google Cloud / Firebase Console setting that must be checked to resolve it.
+  // This NEVER changes App Check behavior and NEVER hides the real error — it only
+  // appends where to look, because these settings live in the Console and cannot
+  // be verified or fixed from this file.
+  function appCheckConsoleGuidance(error){
+    const code = error && error.code ? String(error.code) : '';
+    if(code === 'appCheck/recaptcha-error'){
+      return 'UNVERIFIED FROM THIS FILE — check the Console: ' +
+        '(1) Google Cloud Console > Security > reCAPTCHA Enterprise, project "doki-duck-ai": confirm site key 6LfWh40tAAAAANQNJVVc4CNshFFAMxSSJW6s38my exists, is type "Website", and is SCORE-based (not a checkbox/challenge key). ' +
+        '(2) Confirm that key\'s allowed-domains list includes the exact GitHub Pages hostname this page is served from. ' +
+        '(3) Confirm the "reCAPTCHA Enterprise API" is enabled for project doki-duck-ai. ' +
+        '(4) Firebase Console > App Check > Apps: confirm Web app ID 1:697451070915:web:297e53688065db85746976 is registered with this exact same site key as its reCAPTCHA Enterprise provider. ' +
+        '(5) Confirm the site key was created in this SAME Google Cloud project as the Firebase Web app — a key from a different project fails validation even if the key itself is otherwise valid.';
+    }
+    if(code === 'appCheck/fetch-status-error' || code === 'appCheck/throttled'){
+      return 'UNVERIFIED FROM THIS FILE — check the Console: Firebase Console > App Check > Apps for this Web app\'s enforcement/quota status, and confirm Firebase AI Logic (Gemini API) has App Check enforcement configured as expected for project doki-duck-ai.';
+    }
+    return '';
+  }
+
   function formatGeminiDiagnosticError(error){
     if(!error) return 'Unknown error.';
     const name = error.name ? String(error.name) : 'Error';
     const code = error.code ? String(error.code) : '';
     const message = error.message ? String(error.message) : String(error);
-    return 'name=' + name + (code ? ' | code=' + code : '') + ' | message=' + message;
+    const base = 'name=' + name + (code ? ' | code=' + code : '') + ' | message=' + message;
+    const guidance = appCheckConsoleGuidance(error);
+    return guidance ? base + '  ::  ' + guidance : base;
   }
 
   async function runGeminiDirectDiagnostic(){
