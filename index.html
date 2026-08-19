@@ -734,7 +734,7 @@
 <script type="module">
 import { getApp as getModularFirebaseApp, initializeApp as initializeModularFirebaseApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken as getAppCheckToken } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app-check.js';
-import { getAI, getGenerativeModel, GoogleAIBackend, Schema } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-ai.js';
+import { getAI, getGenerativeModel, GoogleAIBackend, Schema, ThinkingLevel } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-ai.js';
 import { WorkerLinter } from 'https://unpkg.com/harper.js@2.4.0/dist/index.js';
 import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInlined.js';
 
@@ -908,8 +908,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     } catch(error) {
       firebaseReady = false;
       firebaseAuthUser = null;
-      const guidance = (typeof appCheckConsoleGuidance === 'function') ? appCheckConsoleGuidance(error) : '';
-      console.warn('Doki Duck AI: Firebase is unavailable. Continuing in local-only mode.', error, guidance || '(no console guidance for this error code)');
+      console.warn('Doki Duck AI: Firebase is unavailable. Continuing in local-only mode.', error);
     }
   }
 
@@ -1013,7 +1012,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
 
   // PASS 3C-B3: guarded Firebase AI Logic / Gemini secondary verifier.
   // The local Harper + Doki pipeline remains the primary path.
-  const DOKI_GEMINI_MODEL = 'gemini-3.6-flash';
+  const DOKI_GRAMMAR_GEMINI_MODEL = 'gemini-3.6-flash';
+  const DOKI_CHAT_GEMINI_MODEL = 'gemini-3.1-flash-lite';
   let dokiGeminiModel = null;
   let dokiGeminiInitPromise = null;
   let dokiGeminiUnavailableLogged = false;
@@ -1138,7 +1138,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         });
 
         dokiGeminiModel = getGenerativeModel(ai, {
-          model: DOKI_GEMINI_MODEL,
+          model: DOKI_GRAMMAR_GEMINI_MODEL,
           systemInstruction:
             'You are Doki Grammar Police, a strict secondary grammar verifier. ' +
             'You are not a rewriting assistant. Preserve wording, tone, dialect, names, places, brands, ' +
@@ -1319,7 +1319,13 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         ensureDokiModularAppCheck();
         const ai = getAI(modularApp, { backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true });
         dokiChatGeminiModel = getGenerativeModel(ai, {
-          model: DOKI_GEMINI_MODEL,
+          model: DOKI_CHAT_GEMINI_MODEL,
+          generationConfig: {
+            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+            maxOutputTokens: 256,
+            temperature: 0.7
+          },
+          requestOptions: { timeout: 15000 },
           systemInstruction:
             'You are Doki Duck AI, a confident, slightly badass duck who runs his pond like he owns it. ' +
             'Your attitude is mildly sarcastic, cheeky, dry, and unbothered — friendly “who cares, I run this pond” energy. ' +
@@ -1376,48 +1382,64 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     return buildQuackReply(count);
   }
 
-  async function generateDokiChatReply(userText, contextBefore, count){
+  function createDokiStreamingRow(){
+    const row = document.createElement('div');
+    row.className = 'row bot';
+    row.insertAdjacentHTML('beforeend', botAvatarHTML());
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble quack-reply';
+    bubble.textContent = 'Doki is thinking… 🦆';
+    row.appendChild(bubble);
+    messagesEl.appendChild(row);
+    scrollToBottom();
+    return {row, bubble};
+  }
+
+  async function generateDokiChatReplyStream(userText, contextBefore, count, streamUi){
     try {
       const model = await initDokiChatGemini();
       if(!model) return '';
-      const recent = (Array.isArray(contextBefore) ? contextBefore : []).slice(-DOKI_CONTEXT_MAX_SENTENCES);
+      const recent = (Array.isArray(contextBefore) ? contextBefore : []).slice(-2);
       const prompt = 'Respond to this user message as Doki Duck AI. Keep the answer directly useful and grammatically correct. ' +
         'Do not return instructions about logging in or accounts unless the user explicitly asks about authentication. ' +
         'For affection or casual conversation, respond naturally rather than changing the subject. ' +
-        'Use recent conversation context only when it helps answer naturally. User message:\n' + JSON.stringify(String(userText || '')) +
+        'Use recent conversation context only when it helps answer naturally. ' +
+        'Start with the direct answer, then optionally add one short Doki-style flourish. ' +
+        'User message:\n' + JSON.stringify(String(userText || '')) +
         '\nRecent context:\n' + JSON.stringify(recent);
-      const result = await dokiWithTimeout(model.generateContent(prompt), 12000, 'Doki chat persona');
-      const response = result && result.response && typeof result.response.text === 'function' ? result.response.text() : '';
-      const cleaned = sanitizeDokiChatReply(response);
+
+      const stream = model.generateContentStream(prompt);
+      let text = '';
+      let sawChunk = false;
+      const deadline = Date.now() + 15000;
+      for await (const chunk of stream){
+        if(Date.now() > deadline) throw new Error('Doki chat persona timed out while streaming.');
+        const piece = chunk && typeof chunk.text === 'function' ? chunk.text() : '';
+        if(!piece) continue;
+        sawChunk = true;
+        text += piece;
+        const cleaned = sanitizeDokiChatReply(text);
+        if(streamUi && streamUi.bubble) {
+          streamUi.bubble.textContent = cleaned || 'Doki is thinking… 🦆';
+          scrollToBottom();
+        }
+      }
+      const cleaned = sanitizeDokiChatReply(text);
       if(cleaned) return cleaned;
-      return buildLocalChatFallback(userText, count);
+      if(sawChunk) return sanitizeDokiChatReply(text);
+      return '';
     } catch(error){
       dokiChatGeminiLastError = error;
       const detail = error && error.message ? error.message : String(error);
-      console.warn('Doki Duck AI: Gemini chat response failed; using Doki local fallback. Reason: ' + detail, error);
-      return buildLocalChatFallback(userText, count);
+      console.warn('Doki Duck AI: Gemini streaming response failed; using Doki local fallback. Reason: ' + detail, error);
+      return '';
     }
   }
 
-  // Maps a known Firebase App Check / reCAPTCHA Enterprise error code to the exact
-  // Google Cloud / Firebase Console setting that must be checked to resolve it.
-  // This NEVER changes App Check behavior and NEVER hides the real error — it only
-  // appends where to look, because these settings live in the Console and cannot
-  // be verified or fixed from this file.
-  function appCheckConsoleGuidance(error){
-    const code = error && error.code ? String(error.code) : '';
-    if(code === 'appCheck/recaptcha-error'){
-      return 'UNVERIFIED FROM THIS FILE — check the Console: ' +
-        '(1) Google Cloud Console > Security > reCAPTCHA Enterprise, project "doki-duck-ai": confirm site key 6LfWh40tAAAAANQNJVVc4CNshFFAMxSSJW6s38my exists, is type "Website", and is SCORE-based (not a checkbox/challenge key). ' +
-        '(2) Confirm that key\'s allowed-domains list includes the exact GitHub Pages hostname this page is served from. ' +
-        '(3) Confirm the "reCAPTCHA Enterprise API" is enabled for project doki-duck-ai. ' +
-        '(4) Firebase Console > App Check > Apps: confirm Web app ID 1:697451070915:web:297e53688065db85746976 is registered with this exact same site key as its reCAPTCHA Enterprise provider. ' +
-        '(5) Confirm the site key was created in this SAME Google Cloud project as the Firebase Web app — a key from a different project fails validation even if the key itself is otherwise valid.';
-    }
-    if(code === 'appCheck/fetch-status-error' || code === 'appCheck/throttled'){
-      return 'UNVERIFIED FROM THIS FILE — check the Console: Firebase Console > App Check > Apps for this Web app\'s enforcement/quota status, and confirm Firebase AI Logic (Gemini API) has App Check enforcement configured as expected for project doki-duck-ai.';
-    }
-    return '';
+  async function generateDokiChatReply(userText, contextBefore, count, streamUi){
+    const streamed = await generateDokiChatReplyStream(userText, contextBefore, count, streamUi);
+    if(streamed) return streamed;
+    return buildLocalChatFallback(userText, count);
   }
 
   function formatGeminiDiagnosticError(error){
@@ -1425,9 +1447,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     const name = error.name ? String(error.name) : 'Error';
     const code = error.code ? String(error.code) : '';
     const message = error.message ? String(error.message) : String(error);
-    const base = 'name=' + name + (code ? ' | code=' + code : '') + ' | message=' + message;
-    const guidance = appCheckConsoleGuidance(error);
-    return guidance ? base + '  ::  ' + guidance : base;
+    return 'name=' + name + (code ? ' | code=' + code : '') + ' | message=' + message;
   }
 
   async function runGeminiDirectDiagnostic(){
@@ -2421,15 +2441,20 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     void checkGrammarForStage3A(raw, contextBefore).then(function(lints){ showGrammarStage3BResult(lints, raw, thisGrammarScan); });
 
     // Separate Gemini Doki persona; local quack remains the non-Gemini fallback.
-    // Each send gets its own token so a slow/late response from an earlier
-    // message can never land after — or overwrite the context of — a newer one.
+    // Streaming makes the first visible reply arrive sooner, while the token
+    // prevents a late stream from an older message from overwriting a newer one.
     const thisChatToken = ++chatResponseToken;
-    void generateDokiChatReply(raw, contextBefore, count).then(function(reply){
+    const streamUi = createDokiStreamingRow();
+    void generateDokiChatReply(raw, contextBefore, count, streamUi).then(function(reply){
       if(thisChatToken !== chatResponseToken){
         console.info('Doki Duck AI: discarding a stale chat response (a newer message was already sent).');
+        if(streamUi && streamUi.row && streamUi.row.parentNode) streamUi.row.remove();
         return;
       }
-      addRow(reply || buildLocalChatFallback(raw, count), 'bot');
+      if(streamUi && streamUi.bubble){
+        streamUi.bubble.textContent = reply || buildLocalChatFallback(raw, count);
+      }
+      scrollToBottom();
     });
   }
 
