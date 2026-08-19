@@ -733,7 +733,7 @@
 <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-database-compat.js"></script>
 <script type="module">
 import { getApp as getModularFirebaseApp, initializeApp as initializeModularFirebaseApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app-check.js';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken as getAppCheckToken } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app-check.js';
 import { getAI, getGenerativeModel, GoogleAIBackend, Schema } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-ai.js';
 import { WorkerLinter } from 'https://unpkg.com/harper.js@2.4.0/dist/index.js';
 import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInlined.js';
@@ -1139,7 +1139,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
             responseSchema: correctionSchema,
             temperature: 0
           },
-          requestOptions: { timeout: 15000 }
+          requestOptions: { timeout: 30000 }
         });
 
         return dokiGeminiModel;
@@ -1403,11 +1403,20 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     try{
       const model=await initDokiChatGemini();
       if(!model) throw dokiChatGeminiInitError || new Error('Chat model initialization returned null.');
-      const result=await dokiWithTimeout(model.generateContent('Reply with exactly: Gemini diagnostic passed. Then add one short duck-themed flourish.'),12000,'Gemini direct diagnostic');
+      if(!modularAppCheckInstance){
+        throw new Error('Firebase App Check is not initialized for the Gemini app.');
+      }
+      if(out) out.textContent='Testing App Check token…';
+      const tokenResult = await dokiWithTimeout(getAppCheckToken(modularAppCheckInstance, false), 8000, 'Firebase App Check token acquisition');
+      if(!tokenResult || !tokenResult.token){
+        throw new Error('Firebase App Check returned no token. Check the reCAPTCHA Enterprise provider, allowed domain, and App Check registration.');
+      }
+      if(out) out.textContent='App Check token acquired. Testing Gemini request…';
+      const result=await dokiWithTimeout(model.generateContent('Reply with exactly: Gemini diagnostic passed. Then add one short duck-themed flourish.'),30000,'Gemini direct diagnostic');
       const response=result && result.response && typeof result.response.text==='function' ? String(result.response.text()).trim() : '';
       if(!response) throw new Error('Gemini returned an empty response.');
       dokiChatGeminiLastError=null;
-      if(out) out.textContent='DIRECT TEST PASSED — Gemini returned: '+response;
+      if(out) out.textContent='DIRECT TEST PASSED — App Check OK; Gemini returned: '+response;
       return {ok:true,text:response};
     }catch(error){
       dokiChatGeminiLastError=error;
