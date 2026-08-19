@@ -830,24 +830,32 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     return dokiModularFirebaseApp;
   }
 
+  function ensureDokiModularAppCheck(){
+    if(modularAppCheckInstance) return modularAppCheckInstance;
+    const modularApp = getDokiModularFirebaseApp();
+    try {
+      modularAppCheckInstance = initializeAppCheck(modularApp, {
+        provider: new ReCaptchaEnterpriseProvider('6LfWh40tAAAAANQNJVWc4CNshFFAMxSSJW6s38my'),
+        isTokenAutoRefreshEnabled: true
+      });
+      modularAppCheckInitError = null;
+      return modularAppCheckInstance;
+    } catch(error){
+      modularAppCheckInitError = error;
+      throw error;
+    }
+  }
+
   async function initFirebaseIdentity(){
     try {
       if(!window.firebase) throw new Error('Firebase SDK did not load.');
       if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
 
-      // Firebase App Check: use the modular Web SDK for AI Logic attestation.
-      // Compat Auth/Realtime Database remain unchanged.
-      const modularApp = getDokiModularFirebaseApp();
-      if(!modularAppCheckInstance){
-        try {
-          modularAppCheckInstance = initializeAppCheck(modularApp, {
-            provider: new ReCaptchaEnterpriseProvider('6LfWh40tAAAAANQNJVWc4CNshFFAMxSSJW6s38my'),
-            isTokenAutoRefreshEnabled: true
-          });
-        } catch(appCheckError){
-          console.warn('Doki Duck AI: Modular App Check initialization warning.', appCheckError);
-        }
-      }
+      // Firebase App Check must be initialized on the exact modular FirebaseApp
+      // instance that is passed to Firebase AI Logic. Compat Auth/Realtime Database
+      // remain unchanged. Do not swallow this initialization error: Gemini must not
+      // be allowed to proceed with an unprotected AI Logic app.
+      ensureDokiModularAppCheck();
 
       const auth = firebase.auth();
       const database = firebase.database();
@@ -1008,6 +1016,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   let dokiChatGeminiLastError = null;
   let dokiModularFirebaseApp = null;
   let modularAppCheckInstance = null;
+  let modularAppCheckInitError = null;
 
   function splitDokiSentences(text){
     return String(text || '')
@@ -1104,7 +1113,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         }
 
         const modularApp = getDokiModularFirebaseApp();
-        const ai = getAI(modularApp, { backend: new GoogleAIBackend() });
+        ensureDokiModularAppCheck();
+        const ai = getAI(modularApp, { backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true });
 
         const correctionSchema = Schema.object({
           properties: {
@@ -1303,7 +1313,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         }
 
         const modularApp = getDokiModularFirebaseApp();
-        const ai = getAI(modularApp, { backend: new GoogleAIBackend() });
+        ensureDokiModularAppCheck();
+        const ai = getAI(modularApp, { backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true });
         dokiChatGeminiModel = getGenerativeModel(ai, {
           model: DOKI_GEMINI_MODEL,
           systemInstruction:
@@ -1404,7 +1415,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       const model=await initDokiChatGemini();
       if(!model) throw dokiChatGeminiInitError || new Error('Chat model initialization returned null.');
       if(!modularAppCheckInstance){
-        throw new Error('Firebase App Check is not initialized for the Gemini app.');
+        throw modularAppCheckInitError || new Error('Firebase App Check is not initialized for the Gemini app.');
       }
       if(out) out.textContent='Testing App Check token…';
       const tokenResult = await dokiWithTimeout(getAppCheckToken(modularAppCheckInstance, false), 8000, 'Firebase App Check token acquisition');
