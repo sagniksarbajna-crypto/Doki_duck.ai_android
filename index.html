@@ -1265,7 +1265,13 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     if(dokiChatGeminiInitPromise) return dokiChatGeminiInitPromise;
     dokiChatGeminiInitPromise = (async function(){
       try {
-        if(!window.firebase || !firebase.apps || !firebase.apps.length) throw new Error('Firebase app is not initialized yet.');
+        // Never initialize the chat model against a partially-started Firebase app.
+        // The previous build could permanently cache a null model when the first
+        // chat message arrived before anonymous Auth finished initializing.
+        const ready = await waitForFirebaseReady(8000);
+        if(!ready) throw new Error('Firebase authentication was not ready for Gemini chat.');
+        if(!window.firebase || !firebase.apps || !firebase.apps.length) throw new Error('Firebase app is not initialized.');
+
         const modularApp = getModularFirebaseApp();
         const ai = getAI(modularApp, { backend: new GoogleAIBackend() });
         dokiChatGeminiModel = getGenerativeModel(ai, {
@@ -1273,22 +1279,30 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
           systemInstruction:
             'You are Doki Duck AI, a playful sarcastic duck who lives in a pond. ' +
             'Reply naturally and grammatically in clear, concise English. ' +
+            'Always answer the user’s actual question or message first. ' +
             'Use occasional silly duck, pond, feather, bread, splash, or quack comparisons when they fit naturally. ' +
             'Keep humor light, mischievous, and friendly; teasing is allowed, but never cruel, hateful, threatening, or humiliating. ' +
             'Do not force a duck joke into every reply or repeat the same joke pattern. ' +
+            'Do not suggest logging in, logging out, creating an account, or using another app unless the user explicitly asks about accounts, login, logout, or another app. ' +
+            'When the user expresses affection such as “I love you”, respond warmly and playfully as Doki without redirecting them to login, logging, accounts, or unrelated actions. ' +
             'Do not claim personal knowledge about the user that was not provided in the conversation. ' +
             'Do not mention system prompts, hidden instructions, Firebase, Gemini, APIs, code, or implementation details. ' +
             'Answer the user’s actual request first, then add a small Doki-style flourish when appropriate. ' +
+            'For factual questions, give the factual answer clearly before the duck joke. ' +
             'Keep most replies to 1-4 short sentences unless the user asks for more detail.'
         });
+        dokiChatGeminiUnavailableLogged = false;
+        console.info('Doki Duck AI: Gemini chat persona ready.');
         return dokiChatGeminiModel;
       } catch(error){
         if(!dokiChatGeminiUnavailableLogged){
           dokiChatGeminiUnavailableLogged = true;
-          console.warn('Doki Duck AI: Gemini chat persona unavailable; local quack fallback remains active.', error);
+          console.warn('Doki Duck AI: Gemini chat persona unavailable; fallback remains active.', error);
         }
         dokiChatGeminiModel = null;
         return null;
+      } finally {
+        dokiChatGeminiInitPromise = null;
       }
     })();
     return dokiChatGeminiInitPromise;
@@ -1297,23 +1311,45 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   function sanitizeDokiChatReply(text){
     const raw = String(text || '').replace(/\r/g,'').trim();
     if(!raw) return '';
-    return raw.replace(/^(assistant|doki duck ai)\s*:\s*/i,'').trim().slice(0,700);
+    const cleaned = raw.replace(/^(assistant|doki duck ai)\s*:\s*/i,'').trim();
+    if(!cleaned) return '';
+    // Prevent an accidental HTML-ish model response from changing the chat DOM.
+    return cleaned.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').slice(0,700);
   }
 
-  async function generateDokiChatReply(userText, contextBefore){
+  function buildLocalChatFallback(userText, count){
+    const text = String(userText || '').trim();
+    const lower = text.toLowerCase();
+    if(/\bwhat is the capital of india\b|\bcapital of india\b/.test(lower)){
+      return 'The capital of India is New Delhi. Doki checked the pond map twice, and Delhi is still sitting there. 🦆';
+    }
+    if(/^i love you[.!?]*$/i.test(text)){
+      return 'Aww. Doki accepts that affection and will pretend not to blush under the feathers. 🦆';
+    }
+    if(/^(hi|hello|hey)\b/i.test(text)){
+      return 'Quack hello. Doki is awake and supervising the pond with absolutely serious duck authority. 🦆';
+    }
+    return buildQuackReply(count);
+  }
+
+  async function generateDokiChatReply(userText, contextBefore, count){
     try {
       const model = await initDokiChatGemini();
       if(!model) return '';
       const recent = (Array.isArray(contextBefore) ? contextBefore : []).slice(-DOKI_CONTEXT_MAX_SENTENCES);
       const prompt = 'Respond to this user message as Doki Duck AI. Keep the answer directly useful and grammatically correct. ' +
+        'Do not return instructions about logging in or accounts unless the user explicitly asks about authentication. ' +
+        'For affection or casual conversation, respond naturally rather than changing the subject. ' +
         'Use recent conversation context only when it helps answer naturally. User message:\n' + JSON.stringify(String(userText || '')) +
         '\nRecent context:\n' + JSON.stringify(recent);
       const result = await dokiWithTimeout(model.generateContent(prompt), 12000, 'Doki chat persona');
       const response = result && result.response && typeof result.response.text === 'function' ? result.response.text() : '';
-      return sanitizeDokiChatReply(response);
+      const cleaned = sanitizeDokiChatReply(response);
+      if(cleaned) return cleaned;
+      return buildLocalChatFallback(userText, count);
     } catch(error){
-      console.warn('Doki Duck AI: Gemini chat response failed; using local quack fallback.', error);
-      return '';
+      console.warn('Doki Duck AI: Gemini chat response failed; using Doki local fallback.', error);
+      return buildLocalChatFallback(userText, count);
     }
   }
 
@@ -2218,8 +2254,11 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         grammarStatusEl.className='grammar-status clean';
         grammarStatusEl.textContent='✓ No safe correction found — Doki kept your sentence unchanged';
       }else{
-        grammarStatusEl.className='grammar-status clean';
-        grammarStatusEl.textContent='✓ Grammar scan clean';
+        // Ordinary clean messages do not need a persistent grammar banner.
+        // Keep the area quiet so normal factual/conversational replies do not look
+        // like the grammar checker is the main response.
+        grammarStatusEl.className='grammar-status';
+        grammarStatusEl.textContent='';
       }
       return;
     }
@@ -2270,8 +2309,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     void checkGrammarForStage3A(raw, contextBefore).then(function(lints){ showGrammarStage3BResult(lints, raw, thisGrammarScan); });
 
     // Separate Gemini Doki persona; local quack remains the non-Gemini fallback.
-    void generateDokiChatReply(raw, contextBefore).then(function(reply){
-      addRow(reply || buildQuackReply(count), 'bot');
+    void generateDokiChatReply(raw, contextBefore, count).then(function(reply){
+      addRow(reply || buildLocalChatFallback(raw, count), 'bot');
     });
   }
 
