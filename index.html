@@ -1128,7 +1128,12 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     {id:'DOUBLE_COMPARATIVE', version:'1.0.0', category:'COMPARATIVES', priority:6, confidence:'HIGH_LOCAL', enabled:true, triggerDescription:'more + -er form, or most + -est form.', examples:['He is more taller than me.'], counterExamples:[], test:function(t){ return /\bmore\s+[A-Za-z]+er\b|\bmost\s+[A-Za-z]+est\b/i.test(t); }},
     {id:'QUESTION_INVERSION', version:'1.0.0', category:'QUESTIONS', priority:5, confidence:'MEDIUM_LOCAL', enabled:true, triggerDescription:'WH word + pronoun + be/do/have without inversion.', examples:[], counterExamples:[], test:function(t){ return /\b(?:who|what|where|when|why|how)\s+(?:i|you|we|they|he|she|it)\s+(?:is|are|was|were|do|does|did|has|have)\b/i.test(t) && /\?\s*$/.test(t); }},
     {id:'QUESTION_PREPOSITION', version:'1.0.0', category:'PREPOSITIONS', priority:4, confidence:'MEDIUM_LOCAL', enabled:true, triggerDescription:'WH question referencing "on/at class".', examples:[], counterExamples:[], test:function(t){ return /\b(?:on|at)\s+class\b/i.test(t) && /\b(?:who|what|where|when|why|how)\b/i.test(t) && /\?\s*$/.test(t); }},
-    {id:'CROSS_SENTENCE_REFERENCE', version:'1.0.0', category:'CONTEXTUAL', priority:3, confidence:'CONTEXTUAL', enabled:true, triggerDescription:'Sentence opens with a pronoun and prior context exists.', examples:[], counterExamples:[], test:function(t,ctx){ return Array.isArray(ctx) && ctx.length>0 && /^(he|she|they|it|this|that|these|those)\b/i.test(t.trim()); }}
+    {id:'QUESTION_BE_INVERSION', version:'1.0.0', category:'QUESTIONS', priority:6, confidence:'MEDIUM_LOCAL', enabled:true, triggerDescription:'WH word + subject + be/have auxiliary in a direct question.', examples:['Where you are going?','Why she is late?'], counterExamples:['Where are you going?','Why is she late?'], test:function(t){ return /\b(?:what|where|when|why|how)\s+(?:i|you|we|they|he|she|it)\s+(?:is|are|was|were|has|have)\b[^?]*\?/i.test(t); }},
+    {id:'PRONOUN_LEXICAL_AGREEMENT', version:'1.0.0', category:'SUBJECT_VERB_AGREEMENT', priority:6, confidence:'HIGH_LOCAL', enabled:true, triggerDescription:'I/we/you/they + third-person singular lexical verb.', examples:['They likes ducks.','I goes to school.'], counterExamples:['They like ducks.','I go to school.'], test:function(t){ return /\b(?:I|we|you|they)\s+(?:likes|goes|wants|needs|works|plays|talks|writes|studies|tries|does|has|is|was)\b/i.test(t); }},
+    {id:'CROSS_SENTENCE_REFERENCE', version:'1.0.0', category:'CONTEXTUAL', priority:3, confidence:'CONTEXTUAL', enabled:true, triggerDescription:'Sentence opens with a pronoun and prior context exists.', examples:[], counterExamples:[], test:function(t,ctx){ return Array.isArray(ctx) && ctx.length>0 && /^(he|she|they|it|this|that|these|those)\b/i.test(t.trim()); }},
+    {id:'PERFECT_PARTICIPLE_FORM', version:'1.0.0', category:'VERB_FORMS', priority:8, confidence:'HIGH_LOCAL', enabled:true, triggerDescription:'have/has/had + finite/base verb where a past participle is required.', examples:['I have went there.','He has wrote three letters.'], counterExamples:['I have gone there.','He has written three letters.'], test:function(t){ return /\b(?:have|has|had)\s+(?:went|wrote|saw|ate|gave|took|broke|spoke|drove|flew|grew|knew|got|said|told|began|chose|wore|swam)\b/i.test(t); }},
+    {id:'INDEFINITE_SINGULAR_AGREEMENT', version:'1.0.0', category:'SUBJECT_VERB_AGREEMENT', priority:8, confidence:'HIGH_LOCAL', enabled:true, triggerDescription:'each/every/either/neither/everyone/etc. + plural auxiliary or base verb.', examples:['Each student have a notebook.','Everyone are ready.'], counterExamples:['Each student has a notebook.','Everyone is ready.'], test:function(t){ return /\b(?:each|every|either|neither|everyone|everybody|someone|somebody|nobody|anyone|anybody)\b[^.!?]{0,45}\b(?:are|were|have|do)\b/i.test(t); }},
+    {id:'THERE_AGREEMENT', version:'1.0.0', category:'SUBJECT_VERB_AGREEMENT', priority:7, confidence:'HIGH_LOCAL', triggerDescription:'there is/are mismatch with an obvious singular/plural quantifier.', examples:['There is two ducks.','There are a duck.'], counterExamples:['There are two ducks.','There is a duck.'], test:function(t){ return /\bthere\s+(?:is|was|are|were)\s+(?:a|an|one|two|three|four|five|several|many|some)\b/i.test(t); }}
   ]);
 
   function getDokiBlindSpotSignals(text, contextBefore){
@@ -2751,7 +2756,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       // Extended per Blueprint Part 5 verb normalization: a curated, versioned
       // registry rather than an uncontrolled stemmer. Additions below only cover
       // common irregular past forms; they do not change any existing mapping.
-      got:'get', gotten:'get', said:'say', told:'tell', kept:'keep', began:'begin', became:'become',
+      got:'get', gotten:'get', said:'say', told:'tell', left:'leave', kept:'keep', began:'begin', became:'become',
       sat:'sit', stood:'stand', spoke:'speak', spoken:'speak', broke:'break', broken:'break',
       taught:'teach', caught:'catch', held:'hold', paid:'pay', sent:'send', built:'build',
       won:'win', lost:'lose', met:'meet', heard:'hear', flew:'fly', flown:'fly', grew:'grow',
@@ -2801,7 +2806,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       const low=verb.toLowerCase();
       let base=toBase(verb);
       if(!base || base===low || !(/[a-z]/i.test(verb))) continue;
-      if(!baseWhitelist.has(base) && !commonIrregularBase[low]) continue;
+      if(!baseVerbWhitelist.has(base)) continue;
       // Do not interfere with proper nouns or already-base forms.
       if(/^[A-Z][a-z]+$/.test(verb)) continue;
       const start=m.index+m[0].lastIndexOf(verb);
@@ -2817,7 +2822,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     while((m=modals.exec(source))){
       const verb=m[2], low=verb.toLowerCase(), base=toBase(verb);
       if(!base || base===low) continue;
-      if(!baseWhitelist.has(base) && !commonIrregularBase[low]) continue;
+      if(!baseVerbWhitelist.has(base)) continue;
       if(/^[A-Z][a-z]+$/.test(verb)) continue;
       const start=m.index+m[0].lastIndexOf(verb);
       add(start,start+verb.length,verb,base,{id:'modal_base_form',version:'1.0.0',category:'MODALS',label:'Auxiliary verb',confidence:'HIGH_LOCAL'},'After a modal verb, the main verb normally stays in its base form.');
@@ -2833,7 +2838,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       const low=verb.toLowerCase();
       let base=toBase(verb);
       if(!base || base===low) continue;
-      if(!baseWhitelist.has(base) && !commonIrregularBase[low]) continue;
+      if(!baseVerbWhitelist.has(base)) continue;
       const start=m.index+m[0].lastIndexOf(verb);
       add(start,start+verb.length,verb,base,{id:'question_auxiliary_base_form',version:'1.0.0',category:'QUESTIONS',label:'Question / auxiliary',confidence:'HIGH_LOCAL'},'Questions formed with “do”, “does”, or “did” use the base form of the main verb.');
     }
@@ -2848,7 +2853,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       const verb=m[2], low=verb.toLowerCase();
       let base=toBase(verb);
       if(!base || base===low) continue;
-      if(!baseWhitelist.has(base) && !commonIrregularBase[low]) continue;
+      if(!baseVerbWhitelist.has(base)) continue;
       const start=m.index+m[0].lastIndexOf(verb);
       add(start,start+verb.length,verb,base,{id:'wh_auxiliary_base_form',version:'1.0.0',category:'QUESTIONS',label:'Question / auxiliary',confidence:'HIGH_LOCAL'},'In a WH-question formed with “do”, “does”, or “did”, the main verb stays in its base form.');
     }
@@ -2915,10 +2920,15 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       go:'went', be:'was', have:'had', see:'saw', take:'took', eat:'ate', come:'came', run:'ran',
       write:'wrote', give:'gave', make:'made', know:'knew', think:'thought', bring:'brought', buy:'bought',
       find:'found', get:'got', say:'said', tell:'told', do:'did', read:'read', sleep:'slept', feel:'felt',
-      keep:'kept', leave:'left', come:'came', begin:'began', become:'became', choose:'chose', drive:'drove'
+      keep:'kept', leave:'left', begin:'began', become:'became', choose:'chose', drive:'drove',
+      meet:'met', hear:'heard', hold:'held', stand:'stood', sit:'sat', speak:'spoke',
+      send:'sent', build:'built', win:'won', lose:'lost', catch:'caught', teach:'taught',
+      fly:'flew', grow:'grew', draw:'drew', throw:'threw', sing:'sang', swim:'swam',
+      break:'broke', steal:'stole', sell:'sold', spend:'spent', understand:'understood',
+      pay:'paid', wear:'wore', win:'won', cut:'cut', put:'put', let:'let', set:'set'
     };
     const baseVerbWhitelist=new Set([
-      'go','want','like','love','need','work','play','walk','run','talk','feel','think','know','look','come','live','study','watch','listen','read','write','wait','help','try','believe','hope','agree','understand','remember','forget','start','stop','use','make','take','give','tell','ask','answer','laugh','cry','smile','dance','sing','cook','drive','eat','drink','sleep','open','close','clean','buy','sell','pay','call','text','share','follow','miss','hate','enjoy','prefer','plan','decide','choose','learn','teach','explain','discuss','fight','win','lose','practice','train','exercise','swim','jump','climb','build','fix','break','create','design','draw','paint','quack','see','have'
+      'go','leave','get','want','like','love','need','work','play','walk','run','talk','feel','think','know','look','come','live','study','watch','listen','read','write','wait','help','try','believe','hope','agree','understand','remember','forget','start','stop','use','make','take','give','tell','ask','answer','laugh','cry','smile','dance','sing','cook','drive','eat','drink','sleep','open','close','clean','buy','sell','pay','call','text','share','follow','miss','hate','enjoy','prefer','plan','decide','choose','learn','teach','explain','discuss','fight','win','lose','practice','train','exercise','swim','jump','climb','build','fix','break','create','design','draw','paint','quack','see','have','say','meet','hear','hold','stand','sit','speak','send','catch','teach','fly','grow','throw','break','steal','spend','wear','cut','put','let','set','happen','cause'
     ]);
     const protectedNames=['doki','doki duck','doki duck ai','doki grammar police','pond points','pond leaderboard','trophy room'];
     function isProtected(word){
@@ -2933,6 +2943,44 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     function timeCueAt(pos){
       const ctx=(source.slice(Math.max(0,pos-70),pos)+' '+source.slice(pos,Math.min(source.length,pos+90))).toLowerCase();
       return /\b(yesterday|last\s+(?:night|week|month|year|day)|\d+\s+(?:days?|weeks?|months?|years?)\s+ago|earlier|previously|the\s+day\s+before)\b/.test(ctx);
+    }
+
+    // Local morphology helpers used by the reference/fallback rules. They are
+    // deliberately conservative: irregular forms come from a curated map, and
+    // regular transformations are applied only to verbs already present in the
+    // local base-verb whitelist.
+    const irregularToBase={went:'go',gone:'go',did:'do',done:'do',was:'be',were:'be',been:'be',had:'have',
+      saw:'see',seen:'see',took:'take',taken:'take',ate:'eat',eaten:'eat',came:'come',ran:'run',
+      wrote:'write',written:'write',gave:'give',given:'give',made:'make',knew:'know',known:'know',
+      thought:'think',brought:'bring',bought:'buy',found:'find',got:'get',gotten:'get',said:'say',told:'tell',left:'leave',
+      kept:'keep',began:'begin',became:'become',chose:'choose',drove:'drive',met:'meet',heard:'hear',held:'hold',
+      stood:'stand',sat:'sit',spoke:'speak',sent:'send',built:'build',won:'win',lost:'lose',caught:'catch',
+      taught:'teach',flew:'fly',flown:'fly',grew:'grow',grown:'grow',drew:'draw',drawn:'draw',threw:'throw',
+      thrown:'throw',sang:'sing',sung:'sing',swam:'swim',swum:'swim',broke:'break',broken:'break',stole:'steal',
+      stolen:'steal',sold:'sell',spent:'spend',understood:'understand',paid:'pay',wore:'wear',worn:'wear'};
+    function toBase(verb){
+      const low=String(verb||'').toLowerCase();
+      if(irregularToBase[low]) return irregularToBase[low];
+      if(/ies$/i.test(verb) && verb.length>4) return verb.slice(0,-3)+'y';
+      if(/(?:ches|shes|xes|zes|oes|sses)$/i.test(verb)) return verb.slice(0,-2);
+      if(/s$/i.test(verb) && !/ss$/i.test(verb)) return verb.slice(0,-1);
+      return '';
+    }
+    function toPastParticiple(verb){
+      const lowOriginal=String(verb||'').toLowerCase();
+      if(lowOriginal==='got') return 'got';
+      const base=toBase(verb)||lowOriginal;
+      const irregular={be:'been',have:'had',do:'done',go:'gone',see:'seen',take:'taken',eat:'eaten',come:'come',run:'run',
+        write:'written',give:'given',make:'made',know:'known',think:'thought',bring:'brought',buy:'bought',find:'found',
+        get:'gotten',say:'said',tell:'told',keep:'kept',begin:'begun',become:'become',choose:'chosen',drive:'driven',
+        meet:'met',hear:'heard',hold:'held',stand:'stood',sit:'sat',speak:'spoken',send:'sent',build:'built',
+        win:'won',lose:'lost',catch:'caught',teach:'taught',fly:'flown',grow:'grown',draw:'drawn',throw:'thrown',
+        sing:'sung',swim:'swum',break:'broken',steal:'stolen',sell:'sold',spend:'spent',understand:'understood',pay:'paid',wear:'worn'};
+      if(irregular[base]) return irregular[base];
+      if(!baseVerbWhitelist.has(base)) return '';
+      if(/e$/i.test(base)) return base+'d';
+      if(/[^aeiou]y$/i.test(base)) return base.slice(0,-1)+'ied';
+      return base+'ed';
     }
 
     // 1) Auxiliary + inflected verb. These are high-confidence because the auxiliary itself constrains the main verb.
@@ -2983,6 +3031,212 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       if(['at','known','suited','able','for','to','from','of'].includes(followingWord)) continue;
       const start=m.index+m[0].indexOf(adjectivePhrase);
       add(start,start+adjectivePhrase.length,adjectivePhrase,'the '+adjectivePhrase,'Articles','A singular superlative noun phrase normally takes the definite article “the”.');
+    }
+
+    // 4) Perfect auxiliary + wrong participle. Have/has/had require a past participle.
+    const perfect=/\b(have|has|had)\s+([A-Za-z]+)\b/gi;
+    while((m=perfect.exec(source))){
+      const auxWord=m[1].toLowerCase(), verb=m[2], low=verb.toLowerCase();
+      const replacement=toPastParticiple(verb);
+      // Avoid changing an already-valid participle when it equals the canonical replacement.
+      if(!replacement || replacement.toLowerCase()===low) continue;
+      const start=m.index+m[0].lastIndexOf(verb);
+      add(start,start+verb.length,verb,replacement,'Verb tense / form',`After “${auxWord}”, the main verb needs its past-participle form.`);
+    }
+
+    // 4b) Auxiliary/base-form rules. Modals take the main verb immediately;
+    // do/does/did questions may contain a multi-token subject phrase.
+    const modalDirect=/\b(can|could|may|might|must|shall|should|will|would)\s+([A-Za-z]+)\b/gi;
+    while((m=modalDirect.exec(source))){
+      const verb=m[2], low=verb.toLowerCase(), base=toBase(verb);
+      if(!base || base===low || !baseVerbWhitelist.has(base) || /^[A-Z][a-z]+$/.test(verb)) continue;
+      const start=m.index+m[0].lastIndexOf(verb);
+      add(start,start+verb.length,verb,base,'Auxiliary verb','After a modal verb, the main verb normally stays in its base form.');
+    }
+
+    const doAux=/\b(do|does|did)\b/gi;
+    const auxPastToBase={went:'go',got:'get',left:'leave',wrote:'write',saw:'see',ate:'eat',gave:'give',took:'take',came:'come',ran:'run',said:'say',told:'tell',bought:'buy',brought:'bring',thought:'think',knew:'know',found:'find',kept:'keep',began:'begin',became:'become',chose:'choose',drove:'drive',met:'meet',heard:'hear',held:'hold',stood:'stand',spoke:'speak',sent:'send',built:'build',won:'win',lost:'lose',caught:'catch',taught:'teach',flew:'fly',grew:'grow',drew:'draw',threw:'throw',sang:'sing',swam:'swim',broke:'break',stole:'steal',sold:'sell',spent:'spend',understood:'understand',paid:'pay',wore:'wear'};
+    while((m=doAux.exec(source))){
+      const auxWord=m[1].toLowerCase();
+      const after=source.slice(m.index+m[0].length);
+      const tokenRe=/([A-Za-z][A-Za-z'-]*)/g;
+      let tm; const tokens=[]; let consumed=0;
+      while((tm=tokenRe.exec(after)) && tokens.length<7){
+        const gap=after.slice(consumed,tm.index);
+        if(/[.!?]/.test(gap)) break;
+        tokens.push({word:tm[1],index:tm.index});
+        consumed=tm.index+tm[0].length;
+      }
+      for(let i=1;i<tokens.length;i++){
+        const candidate=tokens[i].word, low=candidate.toLowerCase();
+        const base=auxPastToBase[low] || toBase(candidate);
+        if(!base || base===low || !baseVerbWhitelist.has(base)) continue;
+        if(/^[A-Z][a-z]+$/.test(candidate)) continue;
+        const absoluteStart=m.index+m[0].length+tokens[i].index;
+        add(absoluteStart,absoluteStart+candidate.length,candidate,base,'Questions / auxiliary',`After “${auxWord}”, the main verb normally stays in its base form.`);
+        break;
+      }
+    }
+
+    // Continuous forms are intentionally not auto-generated here.
+    // 'is/are/was/were + past participle' may be a valid passive, so a broad
+    // base->-ing rule would create false positives. LanguageTool/Gemini can
+    // handle ambiguous participle/continuous cases later.
+
+    // 4d) To + inflected verb. Exclude the high-value “look forward to” family where “to” is a preposition.
+    const infinitive=/\bto\s+([A-Za-z]+)\b/gi;
+    const gerundPrep=/\b(look\s+forward\s+to|interested\s+in|good\s+at|afraid\s+of|before|after)\s+([A-Za-z]+)\b/gi;
+    while((m=infinitive.exec(source))){
+      const verb=m[1], low=verb.toLowerCase(), base=toBase(verb);
+      const before=source.slice(Math.max(0,m.index-24),m.index).toLowerCase();
+      if(/look\s+forward\s+to\s*$/i.test(before)) continue;
+      if(!base || base===low) continue;
+      if(!baseVerbWhitelist.has(base)) continue;
+      const start=m.index+3;
+      add(start,start+verb.length,verb,base,'Verb form','After infinitive “to”, the main verb normally stays in its base form.');
+    }
+
+    // 4e) Common preposition + gerund patterns.
+    const prepGerund=/\b(look\s+forward\s+to|interested\s+in|good\s+at|afraid\s+of)\s+([A-Za-z]+)\b/gi;
+    while((m=prepGerund.exec(source))){
+      const phrase=m[1].toLowerCase(), verb=m[2], low=verb.toLowerCase();
+      if(/ing$/i.test(verb)) continue;
+      if(!baseVerbWhitelist.has(low)) continue;
+      const ing = /ie$/i.test(verb) ? verb.slice(0,-2)+'ying' : /e$/i.test(verb) && !/(ee|ye|oe)$/i.test(verb) ? verb.slice(0,-1)+'ing' : verb+'ing';
+      const start=m.index+m[0].lastIndexOf(verb);
+      add(start,start+verb.length,verb,ing,'Gerund / infinitive',`After “${phrase}”, English normally uses the -ing form.`);
+    }
+
+    // 4f) Determiner/article agreement for obvious vowel/consonant spelling cases.
+    // Keep a small exception set to avoid simplistic “a university/an hour” mistakes.
+    const vowelSoundExceptions=new Set(['university','unicorn','unit','user','use','usual','unique','european','one','once','ubiquitous','useful','unanimous','united']);
+    // Explicit phonetic exceptions that are high-confidence for learner errors.
+    const aAnExplicit=[
+      {re:/\ban\s+(user|university|unicorn|unit|unique|usual|European|one)\b/gi,problem:'an',replacement:'a'},
+      {re:/\ba\s+(apple|orange|umbrella|elephant|engine|idea)\b/gi,problem:'a',replacement:'an'}
+    ];
+    aAnExplicit.forEach(function(rule){
+      let cm; while((cm=rule.re.exec(source))){
+        const start=cm.index;
+        add(start,start+rule.problem.length,rule.problem,rule.replacement,'Articles','The article should match the word’s opening sound.');
+      }
+    });
+
+    const aAn=/\b(a|an)\s+([A-Za-z][A-Za-z'-]*)\b/gi;
+    while((m=aAn.exec(source))){
+      const article=m[1].toLowerCase(), noun=m[2], lower=noun.toLowerCase();
+      if(isProtected(noun)) continue;
+      if(article==='a' && /^[aeiou]/i.test(noun) && !vowelSoundExceptions.has(lower)){
+        const start=m.index; add(start,start+1,'a','an','Articles','Use “an” before a word beginning with a vowel sound, such as “an apple”.');
+      }else if(article==='an' && /^[^aeiou]/i.test(noun)){
+        // Only obvious consonant-leading words are safe; silent-h words still require 'an'.
+        if(/^(hour|honest|honor|heir|heirloom)$/i.test(noun)) continue;
+        if(vowelSoundExceptions.has(lower)){}
+        const start=m.index; add(start,start+2,'an','a','Articles','Use “a” before a word beginning with a consonant sound.');
+      }
+    }
+
+    // 4g) Common high-confidence preposition mismatch. Broader collocations remain
+    // candidates for the future LanguageTool/Gemini reference path.
+    const collocationRules=[
+      {re:/\b(interested)\s+(on)\b/gi,problem:'on',replacement:'in',why:'The standard collocation is “interested in”.'}
+    ];
+    collocationRules.forEach(function(rule){
+      let cm; while((cm=rule.re.exec(source))){
+        const start=cm.index+cm[0].lastIndexOf(rule.problem);
+        add(start,start+rule.problem.length,rule.problem,rule.replacement,'Prepositions',rule.why);
+      }
+    });
+
+    // 4g) Common high-confidence confusables.
+    const confusableRules=[
+      {re:/\b(your)\s+welcome\b/gi,word:'your',replacement:"you're",why:'The expression is “you are welcome”.'},
+      {re:/\b(youre)\s+welcome\b/gi,word:'youre',replacement:"you're",why:'The contraction “you’re” means “you are”.'},
+      {re:/\b(its)\s+(?:a|an|the)\b/gi,word:'its',replacement:"it's",why:'Use “it’s” when you mean “it is” before a following predicate.'}
+    ];
+    confusableRules.forEach(function(rule){
+      let cm; while((cm=rule.re.exec(source))){
+        const start=cm.index; add(start,start+cm[1].length,cm[1],rule.replacement,'Word confusion',rule.why);
+      }
+    });
+
+    // Pronoun + lexical verb agreement. This is high-confidence for common forms.
+    const pronounLexical=/\b(I|we|you|they)\s+([A-Za-z]+)\b/gi;
+    while((m=pronounLexical.exec(source))){
+      const subject=m[1].toLowerCase(), verb=m[2], low=verb.toLowerCase(), base=toBase(verb);
+      if(!base || !baseVerbWhitelist.has(base) || low===base) continue;
+      if(!/(?:s|es|ies)$/i.test(verb)) continue;
+      const start=m.index+m[0].lastIndexOf(verb);
+      add(start,start+verb.length,verb,base,'Subject–verb agreement','Plural/first-person subjects normally use the base form of the verb here.');
+    }
+
+    // WH inversion remains a reference-layer blind spot. We do not auto-rewrite
+    // it locally because embedded questions such as "I asked where she is going?"
+    // are grammatically valid and indistinguishable with shallow matching.
+
+    // Passive voice: be + a known irregular past form that should be a participle.
+    const passive=/\b(is|are|was|were|be|been|being)\s+(went|wrote|saw|ate|gave|took|broke|spoke|drove|flew|grew|knew|got|said|told|began|chose|wore|swam)\b/gi;
+    while((m=passive.exec(source))){
+      const verb=m[2], replacement=toPastParticiple(verb);
+      if(!replacement || replacement.toLowerCase()===verb.toLowerCase()) continue;
+      const start=m.index+m[0].lastIndexOf(verb);
+      add(start,start+verb.length,verb,replacement,'Verb tense / form','A passive construction uses the past participle after “be”.');
+    }
+
+    // Past-time cue + present/base verb. Keep this limited to clear past markers.
+    const pastCue=/\b(yesterday|last\s+(?:night|week|month|year|day)|\d+\s+(?:days?|weeks?|months?|years?)\s+ago)\b[^.!?]{0,25}\b(I|we|you|they|he|she|it)\s+([A-Za-z]+)\b/gi;
+    while((m=pastCue.exec(source))){
+      const verb=m[3], low=verb.toLowerCase(), base=toBase(verb)||low;
+      if(base!==low || !baseVerbWhitelist.has(base)) continue;
+      const past=irregularPast[base] || (/e$/i.test(base)?base+'d':/[^aeiou]y$/i.test(base)?base.slice(0,-1)+'ied':base+'ed');
+      const start=m.index+m[0].lastIndexOf(verb);
+      add(start,start+verb.length,verb,past,'Verb tense / form','The time expression indicates a completed past action, so the verb normally uses the past tense.');
+    }
+
+    // Distributive/indefinite singular agreement: each/every/either/neither/everyone/everybody/each one.
+    // Keep this conservative: only correct clear auxiliary/verb mismatches.
+    const distributiveAux=/\b(each|every|either|neither)\b(?:\s+of)?(?:\s+[A-Za-z][A-Za-z'-]*){1,6}\s+(are|were|have|do)\b/gi;
+    while((m=distributiveAux.exec(source))){
+      const wrong=m[2].toLowerCase();
+      const replacement={are:'is',were:'was',have:'has',do:'does'}[wrong]||'';
+      if(!replacement) continue;
+      const start=m.index+m[0].lastIndexOf(m[2]);
+      add(start,start+m[2].length,m[2],replacement,'Subject–verb agreement','Words such as “each”, “every”, “either”, “neither”, and “everyone” take singular agreement in standard English.');
+    }
+
+    // Distributive singular subject + base/plural lexical verb.
+    const distributiveVerb=/\b(each|every|everyone|everybody|either|neither)\s+([A-Za-z][A-Za-z'-]*)\s+([A-Za-z]+)\b/gi;
+    while((m=distributiveVerb.exec(source))){
+      const subject=m[1].toLowerCase(), noun=m[2], verb=m[3], low=verb.toLowerCase();
+      if(['of','to','that','who','which','is','was','has','does'].includes(noun.toLowerCase())) continue;
+      if(!baseVerbWhitelist.has(low) || /ing$/i.test(verb) || isProtected(noun) || isProtected(verb)) continue;
+      const replacement=thirdPerson(verb);
+      if(replacement.toLowerCase()===low) continue;
+      const start=m.index+m[0].lastIndexOf(verb);
+      add(start,start+verb.length,verb,replacement,'Subject–verb agreement','A singular distributive subject such as “each” or “every” normally takes a singular present-tense verb.');
+    }
+
+    // Pronoun/quantifier singular agreement for common everyone/someone/no one forms.
+    const indefiniteAux=/\b(everyone|everybody|someone|somebody|nobody|no one|anyone|anybody)\s+(are|were|have|do)\b/gi;
+    while((m=indefiniteAux.exec(source))){
+      const replacement={are:'is',were:'was',have:'has',do:'does'}[m[2].toLowerCase()];
+      if(!replacement) continue;
+      const start=m.index+m[0].lastIndexOf(m[2]);
+      add(start,start+m[2].length,m[2],replacement,'Subject–verb agreement','Singular indefinite pronouns normally take singular agreement.');
+    }
+
+    // There is/are agreement for obvious numeric/count cues.
+    const thereAgree=/\bthere\s+(is|was|are|were)\s+(a|an|one|two|three|four|five|several|many|some|two\s+or\s+more)\b([^.!?]*)/gi;
+    while((m=thereAgree.exec(source))){
+      const aux=m[1].toLowerCase(), quant=m[2].toLowerCase();
+      const pluralCue=/^(are|were)$/.test(aux);
+      const shouldPlural=/^(two|three|four|five|several|many|some|two\s+or\s+more)$/.test(quant);
+      let replacement='';
+      if(shouldPlural && !pluralCue) replacement=aux==='is'?'are':'were';
+      if(!shouldPlural && pluralCue && /^(a|an|one)$/.test(quant)) replacement=aux==='are'?'is':'was';
+      if(!replacement) continue;
+      const start=m.index+m[0].lastIndexOf(m[1]);
+      add(start,start+m[1].length,m[1],replacement,'Subject–verb agreement','The verb after “there” should agree with the noun phrase that follows it.');
     }
 
     // 4) Bare he/she/it + common base verb. Keep a curated list for high confidence.
