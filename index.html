@@ -1111,14 +1111,24 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   // justify a second reference engine even when Harper reports CLEAN. Each trigger
   // must be a known interaction where shallow/local linting can miss an error.
   const DOKI_BLIND_SPOT_REGISTRY = Object.freeze([
-    {id:'AUXILIARY_BASE_FORM', test:function(t){ return /\b(?:does|do|did)\s+(?:i|you|we|they|he|she|it|this|that|these|those|[A-Za-z]+)\s+[A-Za-z]+(?:s|ed|en)\b/i.test(t); }},
-    {id:'MODAL_BASE_FORM', test:function(t){ return /\b(?:can|could|may|might|must|shall|should|will|would)\s+[A-Za-z]+(?:s|ed|en)\b/i.test(t); }},
-    {id:'DISTRIBUTIVE_AGREEMENT', test:function(t){ return /\b(?:each|every|either|neither)\b[^.!?]{0,60}\b(?:are|were|have|do)\b/i.test(t); }},
-    {id:'ARTICLE_SUPERLATIVE', test:function(t){ return /\b(?:is|was|became|remains|seems|looks)\s+(?:best|worst|biggest|smallest|oldest|youngest|strongest|weakest|most\s+[A-Za-z-]+)\s+[A-Za-z]+\b/i.test(t); }},
-    {id:'DOUBLE_COMPARATIVE', test:function(t){ return /\bmore\s+[A-Za-z]+er\b|\bmost\s+[A-Za-z]+est\b/i.test(t); }},
-    {id:'QUESTION_INVERSION', test:function(t){ return /\b(?:who|what|where|when|why|how)\s+(?:i|you|we|they|he|she|it)\s+(?:is|are|was|were|do|does|did|has|have)\b/i.test(t) && /\?\s*$/.test(t); }},
-    {id:'QUESTION_PREPOSITION', test:function(t){ return /\b(?:on|at)\s+class\b/i.test(t) && /\b(?:who|what|where|when|why|how)\b/i.test(t) && /\?\s*$/.test(t); }},
-    {id:'CROSS_SENTENCE_REFERENCE', test:function(t,ctx){ return Array.isArray(ctx) && ctx.length>0 && /^(he|she|they|it|this|that|these|those)\b/i.test(t.trim()); }}
+    {id:'AUXILIARY_BASE_FORM', version:'1.0.0', category:'AUXILIARY_VERBS', priority:10, confidence:'HIGH_LOCAL', enabled:true, triggerDescription:'do/does/did + subject + finite (non-base) main verb.', examples:['Does she cooks well?','Did he went home?'], counterExamples:['Does she cook well?','Did he go home?'], test:function(t){ return /\b(?:does|do|did)\s+(?:i|you|we|they|he|she|it|this|that|these|those|[A-Za-z]+)\s+[A-Za-z]+(?:s|ed|en)\b/i.test(t); }},
+    {id:'WH_AUXILIARY_BASE_FORM', version:'1.0.0', category:'QUESTIONS', priority:10, confidence:'HIGH_LOCAL', enabled:true, triggerDescription:'WH word + do/does/did + subject + finite (non-base) main verb.', examples:['What does she writes?','Where does he lives?','Why did she left?','How did he got there?'], counterExamples:['What does she write?','Where does he live?'], test:function(t){ return /\b(?:what|which|where|why|how|when)\s+(?:does|do|did)\s+(?:you|we|they|he|she|it|I|[A-Z][a-z]+)\s+[A-Za-z]+(?:s|ed|en)\b/i.test(t); }},
+    {id:'MODAL_BASE_FORM', version:'1.0.0', category:'MODALS', priority:10, confidence:'HIGH_LOCAL', enabled:true, triggerDescription:'Modal auxiliary + finite (non-base) main verb.', examples:['She can sings.','He will goes.'], counterExamples:['She can sing.','He will go.'], test:function(t){ return /\b(?:can|could|may|might|must|shall|should|will|would)\s+[A-Za-z]+(?:s|ed|en)\b/i.test(t); }},
+    {id:'SUBJECT_QUESTION_AGREEMENT', version:'1.1.0', category:'SUBJECT_VERB_AGREEMENT', priority:9, confidence:'MEDIUM_LOCAL', enabled:true, triggerDescription:'Sentence opens with "Who" followed directly by a base-form verb candidate; because who can represent singular or plural referents, route this structure to independent reference verification rather than auto-correcting every base verb.', examples:['Who say she is a duck?','Who write these reports?'], counterExamples:['Who says she is a duck?','Who wrote this?','Who writes these reports?','Who does she write to?','Who live here?'], test:function(t){
+      const m=/^\s*Who\s+([A-Za-z]+)\b/i.exec(String(t||''));
+      if(!m) return false;
+      const v=m[1].toLowerCase();
+      const excluded=new Set(['is','are','was','were','do','does','did','has','have','can','could','may','might','must','shall','should','will','would','am','be','been','being']);
+      if(excluded.has(v)) return false;
+      const baseCandidates=new Set(['say','write','tell','want','need','like','love','go','come','live','work','play','know','think','feel','speak','help','use','make','take','give','ask','answer','study','teach','watch','read','cook','run','walk','talk','look','understand','remember','forget','start','stop','learn','practice','train']);
+      return baseCandidates.has(v);
+    }},
+    {id:'DISTRIBUTIVE_AGREEMENT', version:'1.0.0', category:'SUBJECT_VERB_AGREEMENT', priority:8, confidence:'HIGH_LOCAL', enabled:true, triggerDescription:'each/every/either/neither ... plural auxiliary.', examples:['Each of the ducks have a name.'], counterExamples:[], test:function(t){ return /\b(?:each|every|either|neither)\b[^.!?]{0,60}\b(?:are|were|have|do)\b/i.test(t); }},
+    {id:'ARTICLE_SUPERLATIVE', version:'1.0.0', category:'ARTICLES_DETERMINERS', priority:7, confidence:'HIGH_LOCAL', enabled:true, triggerDescription:'Copula + singular superlative + noun with no article.', examples:['Rita is best student.'], counterExamples:['Rita is best at mathematics.'], test:function(t){ return /\b(?:is|was|became|remains|seems|looks)\s+(?:best|worst|biggest|smallest|oldest|youngest|strongest|weakest|most\s+[A-Za-z-]+)\s+[A-Za-z]+\b/i.test(t); }},
+    {id:'DOUBLE_COMPARATIVE', version:'1.0.0', category:'COMPARATIVES', priority:6, confidence:'HIGH_LOCAL', enabled:true, triggerDescription:'more + -er form, or most + -est form.', examples:['He is more taller than me.'], counterExamples:[], test:function(t){ return /\bmore\s+[A-Za-z]+er\b|\bmost\s+[A-Za-z]+est\b/i.test(t); }},
+    {id:'QUESTION_INVERSION', version:'1.0.0', category:'QUESTIONS', priority:5, confidence:'MEDIUM_LOCAL', enabled:true, triggerDescription:'WH word + pronoun + be/do/have without inversion.', examples:[], counterExamples:[], test:function(t){ return /\b(?:who|what|where|when|why|how)\s+(?:i|you|we|they|he|she|it)\s+(?:is|are|was|were|do|does|did|has|have)\b/i.test(t) && /\?\s*$/.test(t); }},
+    {id:'QUESTION_PREPOSITION', version:'1.0.0', category:'PREPOSITIONS', priority:4, confidence:'MEDIUM_LOCAL', enabled:true, triggerDescription:'WH question referencing "on/at class".', examples:[], counterExamples:[], test:function(t){ return /\b(?:on|at)\s+class\b/i.test(t) && /\b(?:who|what|where|when|why|how)\b/i.test(t) && /\?\s*$/.test(t); }},
+    {id:'CROSS_SENTENCE_REFERENCE', version:'1.0.0', category:'CONTEXTUAL', priority:3, confidence:'CONTEXTUAL', enabled:true, triggerDescription:'Sentence opens with a pronoun and prior context exists.', examples:[], counterExamples:[], test:function(t,ctx){ return Array.isArray(ctx) && ctx.length>0 && /^(he|she|they|it|this|that|these|those)\b/i.test(t.trim()); }}
   ]);
 
   function getDokiBlindSpotSignals(text, contextBefore){
@@ -2486,7 +2496,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         const highConfidenceLocal = !properNounRisk && (
           safeLints.some(function(l){return !!suggestionOfLint(l);}) ||
           fallbackNow.some(function(l){return !!suggestionOfLint(l);}) ||
-          referenceNow.some(function(l){return !!suggestionOfLint(l);})
+          referenceNow.some(function(l){return !!suggestionOfLint(l) && String(l.ruleConfidence || 'HIGH_LOCAL') === 'HIGH_LOCAL';})
         );
         const localCandidateLints=safeLints.concat(fallbackNow, referenceNow);
 
@@ -2536,9 +2546,13 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
             return;
           }
           // Reference provider unavailable: do not turn infrastructure failure into
-          // a Gemini call or a visible grammar error. Preserve the normal local-safe UI.
+          // a Gemini call or a visible medium-confidence reference guess. Preserve only
+          // Harper findings and HIGH_LOCAL deterministic corrections.
           stopGrammarAsyncIndicator();
-          showGrammarStage3BResult(safeLints.length?safeLints:localCandidates,text,scanTokenAtStart);
+          const safeDeterministicCandidates=localCandidates.filter(function(l){
+            return String(l && l.ruleConfidence || 'HIGH_LOCAL') === 'HIGH_LOCAL';
+          });
+          showGrammarStage3BResult(safeLints.length?safeLints:safeDeterministicCandidates,text,scanTokenAtStart);
           return;
         }
 
@@ -2693,8 +2707,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     const out=[];
     const source=String(text || '');
     const existing=Array.isArray(existingLints) ? existingLints : [];
-    const referenceRule = function(id, category){
-      return { id:id, version:'1.0.0', category:category };
+    const referenceRule = function(rule){
+      return { id:rule.id, version:String(rule.version || '1.0.0'), category:rule.category, confidence:String(rule.confidence || 'HIGH_LOCAL') };
     };
     function spanOf(l){
       try { return (l && typeof l.span === 'function') ? l.span() : null; } catch(e){ return null; }
@@ -2713,7 +2727,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       if(!problem || !replacement || problem.trim().toLowerCase()===replacement.trim().toLowerCase()) return;
       if(isProtectedWord(problem)) return;
       if(hasOverlap(start,end)) return;
-      const meta=referenceRule(rule.id,rule.category);
+      const meta=referenceRule(rule);
       out.push({
         start,end,
         span:function(){return {start,end};},
@@ -2722,6 +2736,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         rule:rule.label,
         ruleId:meta.id,
         ruleVersion:meta.version,
+        ruleConfidence:String(rule.confidence || 'HIGH_LOCAL'),
         why,
         source:'reference',
         referenceProvider:'doki_local_reference'
@@ -2732,7 +2747,15 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       saw:'see', seen:'see', took:'take', taken:'take', ate:'eat', eaten:'eat', came:'come',
       ran:'run', wrote:'write', written:'write', gave:'give', given:'give', made:'make',
       knew:'know', known:'know', thought:'think', thought:'think', brought:'bring', bought:'buy',
-      found:'find', felt:'feel', slept:'sleep', left:'leave', chose:'choose', drove:'drive'
+      found:'find', felt:'feel', slept:'sleep', left:'leave', chose:'choose', drove:'drive',
+      // Extended per Blueprint Part 5 verb normalization: a curated, versioned
+      // registry rather than an uncontrolled stemmer. Additions below only cover
+      // common irregular past forms; they do not change any existing mapping.
+      got:'get', gotten:'get', said:'say', told:'tell', kept:'keep', began:'begin', became:'become',
+      sat:'sit', stood:'stand', spoke:'speak', spoken:'speak', broke:'break', broken:'break',
+      taught:'teach', caught:'catch', held:'hold', paid:'pay', sent:'send', built:'build',
+      won:'win', lost:'lose', met:'meet', heard:'hear', flew:'fly', flown:'fly', grew:'grow',
+      grown:'grow', drew:'draw', drawn:'draw', threw:'throw', thrown:'throw', sang:'sing', sung:'sing'
     };
     const baseWhitelist = new Set([
       'be','have','do','go','come','see','eat','drink','sleep','walk','run','work','study','play','like',
@@ -2740,7 +2763,11 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       'answer','call','cook','read','write','watch','listen','learn','teach','help','try','understand',
       'remember','forget','start','stop','open','close','clean','buy','sell','pay','share','follow',
       'miss','hate','enjoy','prefer','plan','decide','choose','explain','discuss','practice','train',
-      'exercise','swim','jump','build','fix','break','create','design','draw','paint','sing','dance'
+      'exercise','swim','jump','build','fix','break','create','design','draw','paint','sing','dance',
+      // Extended per Blueprint Part 5: additional common base-form verbs so the
+      // do/does/did/modal/WH/who structural rules recognize them.
+      'get','say','sit','stand','speak','hold','send','catch','begin','become','happen','cause',
+      'win','lose','meet','hear','fly','grow','throw'
     ]);
     function toBase(verb){
       const low=verb.toLowerCase();
@@ -2749,6 +2776,18 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       if(/(?:ches|shes|xes|zes|oes|sses)$/i.test(verb)) return verb.slice(0,-2);
       if(/s$/i.test(verb) && !/ss$/i.test(verb)) return verb.slice(0,-1);
       return '';
+    }
+    // Third-person singular inflection, used only by the new WHO-as-subject rule
+    // below (R5) to build the *correction* replacement (base -> -s form). This
+    // mirrors the existing thirdPerson() helper in buildDokiFallbackLints but is
+    // kept local to this function to avoid touching that unrelated function.
+    function thirdPersonForm(base){
+      const low=base.toLowerCase();
+      if(low==='be') return 'is';
+      if(low==='have') return 'has';
+      if(/(?:ch|sh|s|x|z)$/i.test(low) || /[^aeiou]o$/i.test(low)) return base+'es';
+      if(/[^aeiou]y$/i.test(low)) return base.slice(0,-1)+'ies';
+      return base+'s';
     }
 
     // Rule R1: do/does/did + non-base main verb.
@@ -2766,7 +2805,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       // Do not interfere with proper nouns or already-base forms.
       if(/^[A-Z][a-z]+$/.test(verb)) continue;
       const start=m.index+m[0].lastIndexOf(verb);
-      const rule={id:'aux_do_does_did_base_form',category:'AUXILIARY_VERBS',label:'Auxiliary verb'};
+      const rule={id:'aux_do_does_did_base_form',version:'1.0.0',category:'AUXILIARY_VERBS',label:'Auxiliary verb',confidence:'HIGH_LOCAL'};
       const why=aux==='did'
         ? 'After “did”, the main verb normally stays in its base form.'
         : 'After “do” or “does”, the main verb normally stays in its base form.';
@@ -2781,7 +2820,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       if(!baseWhitelist.has(base) && !commonIrregularBase[low]) continue;
       if(/^[A-Z][a-z]+$/.test(verb)) continue;
       const start=m.index+m[0].lastIndexOf(verb);
-      add(start,start+verb.length,verb,base,{id:'modal_base_form',category:'MODALS',label:'Auxiliary verb'},'After a modal verb, the main verb normally stays in its base form.');
+      add(start,start+verb.length,verb,base,{id:'modal_base_form',version:'1.0.0',category:'MODALS',label:'Auxiliary verb',confidence:'HIGH_LOCAL'},'After a modal verb, the main verb normally stays in its base form.');
     }
 
     // Rule R3: question inversion with do/does/did + third-person -s/-ed.
@@ -2796,8 +2835,31 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       if(!base || base===low) continue;
       if(!baseWhitelist.has(base) && !commonIrregularBase[low]) continue;
       const start=m.index+m[0].lastIndexOf(verb);
-      add(start,start+verb.length,verb,base,{id:'question_auxiliary_base_form',category:'QUESTIONS',label:'Question / auxiliary'},'Questions formed with “do”, “does”, or “did” use the base form of the main verb.');
+      add(start,start+verb.length,verb,base,{id:'question_auxiliary_base_form',version:'1.0.0',category:'QUESTIONS',label:'Question / auxiliary',confidence:'HIGH_LOCAL'},'Questions formed with “do”, “does”, or “did” use the base form of the main verb.');
     }
+
+    // Rule R3b (new): WH word + do/does/did + subject + main verb. Structurally
+    // the same interaction as R3, but anchored to a leading question word so
+    // "What does she writes?" / "Where does he lives?" / "Why did she left?" /
+    // "How did he got there?" are recognized explicitly, without requiring the
+    // WH word itself to carry any agreement. Part 2 of the blind-spot fix.
+    const whAuxQuestion=/\b(?:what|which|where|why|how|when)\s+(does|do|did)\s+(?:you|we|they|he|she|it|I|[A-Z][a-z]+)\s+([A-Za-z]+)\b/gi;
+    while((m=whAuxQuestion.exec(source))){
+      const verb=m[2], low=verb.toLowerCase();
+      let base=toBase(verb);
+      if(!base || base===low) continue;
+      if(!baseWhitelist.has(base) && !commonIrregularBase[low]) continue;
+      const start=m.index+m[0].lastIndexOf(verb);
+      add(start,start+verb.length,verb,base,{id:'wh_auxiliary_base_form',version:'1.0.0',category:'QUESTIONS',label:'Question / auxiliary',confidence:'HIGH_LOCAL'},'In a WH-question formed with “do”, “does”, or “did”, the main verb stays in its base form.');
+    }
+
+    // Rule R5: "who" as a subject is a contextual/reference-engine blind spot,
+    // not a safe universal local correction. "Who" may refer to one person or
+    // multiple people, so forms such as "Who live here?" can be perfectly valid.
+    // The local layer therefore records the structure through the blind-spot registry
+    // but does NOT auto-rewrite the verb. The future LanguageTool provider can supply
+    // an independent judgment, and Gemini remains the final verifier if references
+    // disagree or context is required.
 
     // Rule R4: article + superlative noun phrase. Keep the existing high-confidence
     // behavior but expose it through the independent reference layer as well.
@@ -2809,7 +2871,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       // "is best known for..." are not missing-article noun phrases.
       if(['at','known','suited','able','for','to','from','of'].includes(followingWord)) continue;
       const start=m.index+m[0].indexOf(phrase);
-      add(start,start+phrase.length,phrase,'the '+phrase,{id:'superlative_definite_article',category:'ARTICLES',label:'Articles'},'A singular superlative noun phrase normally takes the definite article “the”.');
+      add(start,start+phrase.length,phrase,'the '+phrase,{id:'superlative_definite_article',version:'1.0.0',category:'ARTICLES',label:'Articles',confidence:'HIGH_LOCAL'},'A singular superlative noun phrase normally takes the definite article “the”.');
     }
 
     return out;
@@ -2924,11 +2986,19 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     }
 
     // 4) Bare he/she/it + common base verb. Keep a curated list for high confidence.
+    // Guard added: this rule targets bare DECLARATIVE statements ("He go to
+    // school."). It must not fire when "he/she/it" is itself the subject of a
+    // do/does/did QUESTION ("Does she cook well?", "Did he go home?", "Where
+    // does he live?", "Who did he write to?") — that structure is already
+    // correctly handled by the auxiliary/WH-question rules, and re-flagging it
+    // here produced a false positive (Blueprint Part 12 false-positive tests).
     const bare=/\b(he|she|it)\s+([A-Za-z]+)\b/gi;
     while((m=bare.exec(source))){
       const subject=m[1].toLowerCase(), verb=m[2], low=verb.toLowerCase();
       if(!baseVerbWhitelist.has(low) || isProtected(verb)) continue;
       if(['is','has','does','was','were','can','will','would','could','should','may','might','must'].includes(low)) continue;
+      const precedingWord=(source.slice(0,m.index).match(/([A-Za-z']+)\s*$/)||[])[1];
+      if(precedingWord && /^(does|do|did)$/i.test(precedingWord)) continue;
       const start=m.index+m[0].lastIndexOf(verb);
       let replacement='';
       let why='A singular subject like “he”, “she”, or “it” normally pairs with the third-person -s form of the verb.';
