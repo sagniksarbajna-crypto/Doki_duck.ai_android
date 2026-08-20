@@ -865,6 +865,13 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
 
 (function(){
   const STORAGE_KEY = 'dokiDuckAI.player.v1';
+  // PASS 4A: temporary onboarding draft protection. sessionStorage only — cleared
+  // once onboarding completes, never promoted to permanent player data on its own.
+  const ONBOARD_DRAFT_KEY = 'dokiDuckAI.onboardDraft.v1';
+  // PASS 4B: local-only structured grammar feedback log (Blueprint Parts 9/11/13).
+  // No cloud sync, no automatic Gemini analysis, no PII beyond a short text excerpt.
+  const GRAMMAR_FEEDBACK_KEY = 'dokiDuckAI.grammarFeedback.v1';
+  const GRAMMAR_FEEDBACK_MAX = 200;
   const DEFAULT_PLAYER = {
     username: '', age: '', acceptedTerms: false,
     pondPoints: 0, xp: 0, worms: 0, dokiLevel: 1, dokiStage: 1,
@@ -944,6 +951,84 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(player)); } catch(e) {}
     scheduleCloudSync();
   }
+
+  // PASS 4B: structured local grammar feedback log. This is intentionally
+  // local-only — it exists so a FUTURE human-reviewed maintenance pass can look
+  // at recurring rule performance. Nothing here is synced, uploaded, or fed back
+  // into Gemini automatically, and no grammar rule is modified by this data.
+  function loadGrammarFeedbackLog(){
+    try {
+      const raw = localStorage.getItem(GRAMMAR_FEEDBACK_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch(e){ return []; }
+  }
+
+  function truncateForFeedback(text){
+    // Minimize stored text: a short excerpt only, never the full conversation.
+    return String(text || '').slice(0, 140);
+  }
+
+  // Stable rule IDs are metadata only; they do not alter existing correction logic.
+  // This closes the Blueprint's versioning/registry traceability gap without rewriting
+  // the proven rule implementation in this pass.
+  const DOKI_RULE_METADATA = Object.freeze({
+    'Subject–verb agreement': {id:'subject_verb_agreement', version:'1.0.0', category:'SUBJECT_VERB_AGREEMENT'},
+    'Auxiliary verb': {id:'auxiliary_verb', version:'1.0.0', category:'AUXILIARY_VERBS'},
+    'Verb tense / form': {id:'verb_tense_form', version:'1.0.0', category:'VERB_TENSE_FORM'},
+    'Articles': {id:'articles_determiners', version:'1.0.0', category:'ARTICLES_DETERMINERS'},
+    'Pronouns': {id:'pronouns', version:'1.0.0', category:'PRONOUNS'},
+    'Prepositions': {id:'prepositions', version:'1.0.0', category:'PREPOSITIONS'},
+    'Punctuation': {id:'punctuation', version:'1.0.0', category:'PUNCTUATION'},
+    'Spelling': {id:'spelling_typography', version:'1.0.0', category:'SPELLING_TYPOGRAPHY'},
+    'Contextual / unresolved grammar': {id:'contextual_unresolved', version:'1.0.0', category:'CONTEXTUAL'},
+    'Grammar / sentence structure': {id:'grammar_sentence_structure', version:'1.0.0', category:'SENTENCE_STRUCTURE'}
+  });
+
+  function getDokiRuleMeta(ruleLabel){
+    const key=String(ruleLabel||'Grammar / sentence structure');
+    if(DOKI_RULE_METADATA[key]) return DOKI_RULE_METADATA[key];
+    const found=Object.values(DOKI_RULE_METADATA).find(function(meta){ return meta.id===key; });
+    return found || {id:key.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''),version:'1.0.0',category:'OTHER'};
+  }
+
+  // Developer-only registry inspection. The registry is metadata/traceability in this
+  // pass; it does not rewrite or replace the proven matching logic above.
+  window.dokiGrammarRuleRegistry = {
+    get: function(){ return JSON.parse(JSON.stringify(DOKI_RULE_METADATA)); },
+    getOne: function(labelOrId){ return {...getDokiRuleMeta(labelOrId)}; }
+  };
+
+  function logGrammarFeedback(entry){
+    try {
+      const log = loadGrammarFeedbackLog();
+      const meta = getDokiRuleMeta(entry && entry.ruleId);
+      log.push({
+        id: 'gf_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
+        timestamp: Date.now(),
+        ruleId: meta.id,
+        ruleVersion: meta.version,
+        grammarTopic: String((entry && (entry.grammarTopic || meta.category)) || meta.category),
+        source: String((entry && entry.source) || 'local'),
+        originalText: truncateForFeedback(entry && entry.originalText),
+        finding: truncateForFeedback(entry && entry.finding),
+        action: String((entry && entry.action) || 'shown'),
+        confidence: entry && entry.confidence != null ? String(entry.confidence) : ''
+      });
+      while(log.length > GRAMMAR_FEEDBACK_MAX) log.shift();
+      localStorage.setItem(GRAMMAR_FEEDBACK_KEY, JSON.stringify(log));
+    } catch(e) {
+      // Local feedback storage must never be able to break chat or grammar.
+    }
+  }
+
+  // Developer-only accessor. Not wired to any UI. A future nightly/maintenance
+  // review process (human-approved, per Blueprint Part 19) can read this via
+  // window.dokiGrammarFeedbackLog.get() during development.
+  window.dokiGrammarFeedbackLog = {
+    get: loadGrammarFeedbackLog,
+    clear: function(){ try { localStorage.removeItem(GRAMMAR_FEEDBACK_KEY); } catch(e){} }
+  };
 
   // Gemini/App Check state must be declared before initFirebaseIdentity() can run.
   let dokiChatGeminiModel = null;
@@ -1065,6 +1150,32 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   const dokiMenuProfileName = document.getElementById('dokiMenuProfileName');
   const dokiMenuProfileMeta = document.getElementById('dokiMenuProfileMeta');
 
+  // PASS 4A: onboarding draft protection. sessionStorage only (cleared on tab
+  // close and on successful onboarding completion). This survives an unexpected
+  // reload during the profile step or the terms step without ever becoming
+  // permanent player data on its own — only openTerms()/accept() do that.
+  function saveOnboardDraft(){
+    try {
+      sessionStorage.setItem(ONBOARD_DRAFT_KEY, JSON.stringify({
+        username: profileUsername.value,
+        age: profileAge.value
+      }));
+    } catch(e) {}
+  }
+  function restoreOnboardDraft(){
+    try {
+      const raw = sessionStorage.getItem(ONBOARD_DRAFT_KEY);
+      if(!raw) return;
+      const draft = JSON.parse(raw);
+      if(!draft) return;
+      if(typeof draft.username === 'string' && draft.username) profileUsername.value = draft.username;
+      if(typeof draft.age !== 'undefined' && draft.age !== '' && draft.age != null) profileAge.value = draft.age;
+    } catch(e) {}
+  }
+  function clearOnboardDraft(){
+    try { sessionStorage.removeItem(ONBOARD_DRAFT_KEY); } catch(e) {}
+  }
+
   function showApp(){
     onboardOverlay.classList.add('onboard-hidden');
     updateDokiMenuSummary();
@@ -1076,6 +1187,10 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     termsStep.classList.add('onboard-hidden');
     profileUsername.value = player.username || '';
     profileAge.value = player.age || '';
+    // Restore any draft typed just before an unexpected reload. The draft
+    // reflects more recent user input than the stored player defaults above,
+    // so it takes precedence when present.
+    restoreOnboardDraft();
     profileUsername.focus();
   }
   function openTerms(){
@@ -1103,10 +1218,13 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     termsError.textContent = '';
     syncAvailableAchievements();
     savePlayer();
+    clearOnboardDraft();
     showApp();
     setTimeout(function(){ maybeShowFirstGrammarWarmup(); },0);
   }
   profileContinue.addEventListener('click', openTerms);
+  profileUsername.addEventListener('input', saveOnboardDraft);
+  profileAge.addEventListener('input', saveOnboardDraft);
   profileUsername.addEventListener('keydown', e=>{ if(e.key==='Enter') profileAge.focus(); });
   profileAge.addEventListener('keydown', e=>{ if(e.key==='Enter') openTerms(); });
   acceptTerms.addEventListener('click', accept);
@@ -1394,7 +1512,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       problem: String(correction.original || ''),
       replacement: String(correction.replacement || ''),
       rule: String(correction.category || 'Grammar / sentence structure'),
-      why: String(correction.reason || 'Doki found a context-sensitive grammar issue.')
+      why: String(correction.reason || 'Doki found a context-sensitive grammar issue.'),
+      source: 'gemini'
     };
   }
 
@@ -1697,7 +1816,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         '\nLocal findings (may be wrong and must be independently judged):\n' + JSON.stringify(findings) +
         '\nEscalation reason:\n' + JSON.stringify(String(routeReason || ''));
 
-      const result = await dokiWithTimeout(model.generateContent(prompt), 5000, 'Gemini verifier');
+      const result = await dokiWithTimeout(model.generateContent(prompt), 4000, 'Gemini verifier');
       const raw = result && result.response && typeof result.response.text === 'function'
         ? result.response.text()
         : '';
@@ -2562,12 +2681,37 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       issue.querySelector('.grammar-explain').textContent=explanation;
       issue.querySelector('.grammar-rule').textContent=rule;
       body.appendChild(issue);
+      logGrammarFeedback({
+        ruleId: lint.ruleId || getDokiRuleMeta(rule).id,
+        grammarTopic: rule,
+        source: lint.source || 'local',
+        originalText: text,
+        finding: problem + (replacement ? ' → ' + replacement : ''),
+        action: 'shown'
+      });
     });
     const feedback=document.createElement('div'); feedback.className='grammar-feedback';
     feedback.innerHTML='<span>Was this explanation useful?</span><button type="button">👍</button><button type="button">👎</button>';
     const fb=feedback.querySelectorAll('button');
-    fb[0].addEventListener('click',function(){feedback.querySelector('span').textContent='Thanks. Doki will pretend to value your opinion.';});
-    fb[1].addEventListener('click',function(){feedback.querySelector('span').textContent='Feedback noted. Doki remains suspicious.';});
+    function logCardFeedback(action){
+      lints.forEach(function(lint){
+        const problem=lint.problem || safeProblemText(lint);
+        const replacement=lint.replacement!=null ? String(lint.replacement) : '';
+        const message=lint.message || safeLintMessage(lint);
+        const kind=lint.rule || safeLintKind(lint);
+        const rule=lint.rule || classifyDokiRule(message,kind,problem,replacement);
+        logGrammarFeedback({
+          ruleId: rule,
+          grammarTopic: rule,
+          source: lint.source || 'local',
+          originalText: text,
+          finding: problem + (replacement ? ' → ' + replacement : ''),
+          action: action
+        });
+      });
+    }
+    fb[0].addEventListener('click',function(){feedback.querySelector('span').textContent='Thanks. Doki will pretend to value your opinion.';logCardFeedback('thumbs_up');});
+    fb[1].addEventListener('click',function(){feedback.querySelector('span').textContent='Feedback noted. Doki remains suspicious.';logCardFeedback('thumbs_down');});
     body.appendChild(feedback);
     card.appendChild(body);
     grammarLearningBody.innerHTML='';
@@ -2587,7 +2731,9 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     const rawKind = safeLintKind(lint);
     const rule = (lint && lint.rule) ? String(lint.rule) : classifyDokiRule(rawMessage, rawKind, problem, replacement);
     const why = (lint && lint.why) ? String(lint.why) : explainDokiRule(rule, problem, replacement, rawMessage);
-    return { problem: problem || 'the highlighted part', replacement: replacement || '', rule: rule || 'Grammar / sentence structure', why: why || 'Doki found a grammar issue in this part of the sentence.' };
+    const source = (lint && lint.source) ? String(lint.source) : 'local';
+    const ruleMeta = getDokiRuleMeta(rule || 'Grammar / sentence structure');
+    return { problem: problem || 'the highlighted part', replacement: replacement || '', rule: rule || 'Grammar / sentence structure', ruleId: ruleMeta.id, ruleVersion: ruleMeta.version, why: why || 'Doki found a grammar issue in this part of the sentence.', source: source };
   }
 
 
