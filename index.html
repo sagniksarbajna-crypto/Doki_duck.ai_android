@@ -387,7 +387,7 @@
   .phone.incognito .doki-cwd-inputbar input::placeholder{color:#6b6784;}
   .phone.incognito .doki-cwd-back{background:#57508a;border-color:#8a84c9;}
 
-  /* First-launch Gemini check + responsive Doki loading states. */
+  /* First-launch grammar-engine warm-up + responsive Doki loading states. */
   .doki-gemini-first-check{position:absolute;left:14px;right:14px;top:126px;z-index:60;display:none;align-items:center;gap:12px;padding:10px 12px;border:2px solid var(--ink);border-radius:16px;background:#fffdf6;box-shadow:0 10px 24px rgba(0,0,0,.14);cursor:pointer;transition:transform .2s ease,opacity .2s ease,box-shadow .2s ease;}
   .doki-gemini-first-check.visible{display:flex}
   .doki-gemini-first-check:active{transform:scale(.985)}
@@ -708,11 +708,11 @@
     </div>
   </div>
 
-  <div class="doki-gemini-first-check" id="dokiGeminiFirstCheck" role="button" tabindex="0" aria-label="Tap Doki to check Gemini for the first time">
+  <div class="doki-gemini-first-check" id="dokiGeminiFirstCheck" role="button" tabindex="0" aria-label="Tap Doki to wake the grammar engine for the first time">
     <img id="dokiGeminiFirstImage" src="doki-standing.png" alt="Doki Duck">
     <div class="doki-gemini-first-copy">
-      <div class="doki-gemini-first-title" id="dokiGeminiFirstTitle">🦆 Tap Doki to test the pond</div>
-      <div class="doki-gemini-first-note" id="dokiGeminiFirstNote">Tap Doki once to check Gemini for the first time. Normal Chat stays available.</div>
+      <div class="doki-gemini-first-title" id="dokiGeminiFirstTitle">🦆 Tap Doki to wake the pond grammar engine</div>
+      <div class="doki-gemini-first-note" id="dokiGeminiFirstNote">Tap Doki once. Doki will wake the local grammar engine; normal Chat stays available.</div>
     </div>
   </div>
 
@@ -1104,7 +1104,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     syncAvailableAchievements();
     savePlayer();
     showApp();
-    setTimeout(function(){ maybeShowFirstGeminiCheck(); },0);
+    setTimeout(function(){ maybeShowFirstGrammarWarmup(); },0);
   }
   profileContinue.addEventListener('click', openTerms);
   profileUsername.addEventListener('keydown', e=>{ if(e.key==='Enter') profileAge.focus(); });
@@ -1730,7 +1730,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       });
       return !covered;
     });
-    const strongContextSignal = signals.crossSentencePronoun || signals.conditional || signals.participle || (signals.temporal && (signals.priorTemporal || ctx.length>0)) || hasComplexClauseSignals(text);
+    const strongContextSignal = signals.crossSentencePronoun || signals.conditional || signals.participle || (signals.temporal && signals.priorTemporal) || hasComplexClauseSignals(text);
     if(hasUnresolvedNoSuggestion && strongContextSignal) reasons.push('Harper issue without a confident replacement in a contextual sentence');
     if(signals.crossSentencePronoun) reasons.push('cross-sentence pronoun/reference');
     if(signals.conditional) reasons.push('conditional or modal-perfect structure');
@@ -1740,7 +1740,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
 
     // Context is useful only when there is actually something to compare against.
     if(ctx.length>0 && (signals.crossSentencePronoun || (signals.temporal && signals.priorTemporal))){
-      reasons.push('recent sentence context available');
+      reasons.push('recent context is relevant to the sentence');
     }
 
     // Avoid escalating very short conversational fragments by themselves.
@@ -2193,22 +2193,26 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         dokiLastRouteReason=route.reason+(properNounRisk?'; possible proper noun/spelling ambiguity':'');
         window.dokiGrammarRouting={route:(route.route==='contextual'||properNounRisk)?'contextual':'local',reason:dokiLastRouteReason,context:context,timestamp:Date.now()};
         const contextualEscalation=route.route==='contextual';
-        const shouldEscalate=contextualEscalation||properNounRisk;
-
-        if(!shouldEscalate){
-          stopGrammarAsyncIndicator();
-          showGrammarStage3BResult(safeLints,text,scanTokenAtStart);
-          return;
-        }
-
         const hasSafeLocal=safeLints.some(function(l){return !!suggestionOfLint(l);})||fallbackNow.length>0;
+
+        // High-confidence local grammar is the default authority. Do NOT spend a
+        // Gemini request merely because a contextual signal exists. Gemini is only
+        // justified when the local result is unresolved, or when proper-noun risk
+        // specifically makes the local result unsafe to trust.
         if(hasSafeLocal && !properNounRisk){
           stopGrammarAsyncIndicator();
           showGrammarStage3BResult(safeLints.length?safeLints:fallbackNow,text,scanTokenAtStart);
-        }else{
-          startGrammarAsyncIndicator();
+          return;
         }
 
+        const shouldEscalate=(contextualEscalation||properNounRisk) && (!hasSafeLocal || properNounRisk);
+        if(!shouldEscalate){
+          stopGrammarAsyncIndicator();
+          showGrammarStage3BResult(safeLints.length?safeLints:fallbackNow,text,scanTokenAtStart);
+          return;
+        }
+
+        startGrammarAsyncIndicator();
         const verified=await runDokiGeminiVerifier(text,context,safeLints,dokiLastRouteReason);
         if(scanTokenAtStart!==grammarScanToken)return;
         const merged=mergeGeminiResultIntoLints(text,safeLints,verified,properNounRisk,contextualEscalation);
@@ -2706,6 +2710,9 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     // order was silently erasing the grammar result in the previous build.
     inputEl.value = '';
     meterEl.innerHTML = '&nbsp;';
+    // Grammar work is background-only. Never lock the default chat input or send button.
+    inputEl.disabled = false;
+    sendBtn.disabled = false;
     stopGrammarAsyncIndicator();
 
     // Pass 3B keeps grammar feedback inside the default chat. The grammar
@@ -2885,7 +2892,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     if(dokiRoute === 'chat'){
       scrollToBottom();
       if(inputEl) inputEl.focus();
-      maybeShowFirstGeminiCheck();
+      maybeShowFirstGrammarWarmup();
     } else if(dokiRoute === 'chatWithDoki'){
       renderCwdLimitStatus();
       scrollCwdToBottom();
@@ -2939,53 +2946,57 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     }
   });
 
-  const FIRST_GEMINI_CHECK_KEY='dokiDuckAI.firstGeminiCheck.v1';
-  let firstGeminiCheckBusy=false;
-  function hasCompletedFirstGeminiCheck(){try{return localStorage.getItem(FIRST_GEMINI_CHECK_KEY)==='passed';}catch(e){return false;}}
-  function markFirstGeminiCheckPassed(){try{localStorage.setItem(FIRST_GEMINI_CHECK_KEY,'passed');}catch(e){}}
-  async function startFirstGeminiCheck(){
-    if(!dokiGeminiFirstCheck||firstGeminiCheckBusy||hasCompletedFirstGeminiCheck())return;
-    firstGeminiCheckBusy=true;
+  const FIRST_GRAMMAR_CHECK_KEY='dokiDuckAI.firstGrammarWarmup.v1';
+  let firstGrammarWarmupBusy=false;
+  function hasCompletedFirstGrammarWarmup(){try{return localStorage.getItem(FIRST_GRAMMAR_CHECK_KEY)==='ready';}catch(e){return false;}}
+  function markFirstGrammarWarmupPassed(){try{localStorage.setItem(FIRST_GRAMMAR_CHECK_KEY,'ready');}catch(e){}}
+  async function startFirstGrammarWarmup(){
+    if(!dokiGeminiFirstCheck||firstGrammarWarmupBusy||hasCompletedFirstGrammarWarmup())return;
+    firstGrammarWarmupBusy=true;
     dokiGeminiFirstCheck.classList.add('checking');
     dokiGeminiFirstCheck.classList.remove('failed');
     dokiGeminiFirstImage.src='doki-loading.webp';
-    dokiGeminiFirstTitle.textContent='🦆 Doki is checking Gemini…';
-    dokiGeminiFirstNote.textContent='The hidden test is running now. Normal Chat stays available.';
+    dokiGeminiFirstTitle.textContent='🦆 Doki is waking the pond grammar engine…';
+    dokiGeminiFirstNote.textContent='One quick local warm-up. No Gemini request is needed for this.';
     try{
-      const result=await runGeminiDirectDiagnostic();
-      if(result&&result.ok){
-        markFirstGeminiCheckPassed();
-        dokiGeminiFirstTitle.textContent='✅ Gemini is ready. Doki approves.';
-        dokiGeminiFirstNote.textContent='The pond connection passed. This check will not appear again on this device.';
-        setTimeout(function(){dokiGeminiFirstCheck.classList.add('success');setTimeout(function(){if(dokiGeminiFirstCheck)dokiGeminiFirstCheck.classList.remove('visible');},220);},450);
-      }else{
-        dokiGeminiFirstCheck.classList.remove('checking');
-        dokiGeminiFirstCheck.classList.add('failed');
-        dokiGeminiFirstImage.src='doki-standing.png';
-        dokiGeminiFirstTitle.textContent='😑 Gemini did not quack back.';
-        dokiGeminiFirstNote.textContent='Tap Doki to retry the hidden connection test. Normal Chat stays available.';
-        firstGeminiCheckBusy=false;
-      }
+      const linter=window.dokiHarper && window.dokiHarper.linter;
+      if(!linter) throw new Error('Local grammar engine is not available.');
+      const ready=await dokiWithTimeout(
+        window.dokiHarperReady || Promise.resolve(linter),
+        8000,
+        'Harper grammar engine warm-up'
+      ).catch(function(){ return null; });
+      if(!ready) throw new Error('Local grammar engine did not become ready.');
+
+      // One tiny local lint keeps the engine genuinely warm without touching Gemini.
+      await dokiWithTimeout(linter.lint('She go to college.'), 3000, 'Harper warm-up lint');
+      markFirstGrammarWarmupPassed();
+      dokiGeminiFirstTitle.textContent='✅ Pond grammar engine ready.';
+      dokiGeminiFirstNote.textContent='Doki is ready to catch grammar trouble locally. Gemini stays secondary.';
+      setTimeout(function(){
+        dokiGeminiFirstCheck.classList.add('success');
+        setTimeout(function(){if(dokiGeminiFirstCheck)dokiGeminiFirstCheck.classList.remove('visible');},220);
+      },450);
     }catch(error){
       dokiGeminiFirstCheck.classList.remove('checking');
       dokiGeminiFirstCheck.classList.add('failed');
-        dokiGeminiFirstImage.src='doki-standing.png';
-      dokiGeminiFirstTitle.textContent='😑 The pond check needs another try.';
-      dokiGeminiFirstNote.textContent='Tap Doki to retry. Normal Chat stays available.';
-      firstGeminiCheckBusy=false;
+      dokiGeminiFirstImage.src='doki-standing.png';
+      dokiGeminiFirstTitle.textContent='😑 Doki needs one more grammar wake-up.';
+      dokiGeminiFirstNote.textContent='Tap Doki to retry the local grammar-engine warm-up. No Gemini request is made here.';
+      firstGrammarWarmupBusy=false;
     }
   }
-  function maybeShowFirstGeminiCheck(){
-    if(!dokiGeminiFirstCheck||!player.acceptedTerms||hasCompletedFirstGeminiCheck())return;
+  function maybeShowFirstGrammarWarmup(){
+    if(!dokiGeminiFirstCheck||!player.acceptedTerms||hasCompletedFirstGrammarWarmup())return;
     dokiGeminiFirstCheck.classList.add('visible');
   }
   if(dokiGeminiFirstCheck){
-    dokiGeminiFirstCheck.addEventListener('click',startFirstGeminiCheck);
-    dokiGeminiFirstCheck.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();startFirstGeminiCheck();}});
+    dokiGeminiFirstCheck.addEventListener('click',startFirstGrammarWarmup);
+    dokiGeminiFirstCheck.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();startFirstGrammarWarmup();}});
   }
 
   showDokiRoute('chat');
-  maybeShowFirstGeminiCheck();
+  maybeShowFirstGrammarWarmup();
 
 })();
 </script>
