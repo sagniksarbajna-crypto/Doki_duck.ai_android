@@ -409,6 +409,16 @@
   .grammar-async-indicator span{font-weight:800}
   .phone.incognito .grammar-async-indicator{background:#232230;color:#c9c1ff}
   .phone.route-nonchat .grammar-async-indicator{display:none!important}
+  /* Default-chat grammar work indicator: only visible while real async work is active. */
+  .grammar-work-row{display:none;align-items:center;gap:9px;margin:0 0 2px 34px;max-width:calc(100% - 42px);padding:7px 10px;background:#fff;border:2px solid var(--ink);border-radius:16px;box-shadow:0 6px 16px rgba(0,0,0,.07)}
+  .grammar-work-row.visible{display:flex}
+  .grammar-work-row img{width:58px;height:58px;object-fit:contain;flex:0 0 auto}
+  .grammar-work-copy{min-width:0;font-size:11px;line-height:1.3;font-weight:900}
+  .grammar-work-message{min-height:29px;display:flex;align-items:center}
+  .grammar-work-row.success{opacity:0;transform:translateY(-4px);transition:opacity .18s ease,transform .18s ease}
+  .phone.incognito .grammar-work-row{background:#2f2e3a;color:#eae7f5;border-color:#5b596a}
+  .phone.route-nonchat .grammar-work-row{display:none!important}
+  @media(max-width:430px){.grammar-work-row{margin-left:30px;max-width:calc(100% - 34px)}.grammar-work-row img{width:50px;height:50px}}
 
   .cwd-gemini-loading{position:relative;display:flex;align-items:center;min-height:78px;margin:2px 0 4px 34px;max-width:calc(100% - 42px);background:#fff;border:2px solid var(--ink);border-radius:18px;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.08)}
   .cwd-gemini-loading img{width:82px;height:82px;object-fit:contain;flex:0 0 auto;transform:translateX(-4px);animation:cwdDuckBounce .8s ease-in-out infinite alternate;will-change:transform,opacity;backface-visibility:hidden}
@@ -731,6 +741,10 @@
 
   <div class="messages" id="messages">
     <div class="system-note" id="systemNote">You are now chatting with Doki Duck AI. It has one skill.</div>
+    <div class="grammar-work-row" id="grammarWorkRow" aria-live="polite" aria-hidden="true">
+      <img id="grammarWorkImage" src="doki-loading.webp" alt="Doki is checking your grammar">
+      <div class="grammar-work-copy"><div class="grammar-work-message" id="grammarWorkMessage">Doki is interrogating the verbs…</div></div>
+    </div>
     <div class="row bot">
       <div class="bot-mini">
         <img src="data:image/jpeg;base64,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" alt="">
@@ -747,12 +761,7 @@
   </div>
 
   <div class="meter" id="meter">&nbsp;</div>
-  <div class="grammar-async-indicator" id="grammarAsyncIndicator" aria-live="polite" aria-hidden="true">
-    <img id="grammarAsyncImage" src="doki-loading.webp" alt="">
-    <span id="grammarAsyncMessage">Doki is checking the pond of grammar…</span>
-  </div>
-
-  <div class="grammar-status" id="grammarStatus" aria-live="polite">Grammar engine: starting…</div>
+  <div class="grammar-status" id="grammarStatus" aria-live="polite"></div>
   <div class="grammar-learning-panel" id="grammarLearningPanel" role="region" aria-label="Doki Grammar Police" aria-live="polite" aria-hidden="true">
     <div class="grammar-learning-head" id="grammarLearningHead">🚨 Doki Grammar Police</div>
     <div class="grammar-learning-body" id="grammarLearningBody"></div>
@@ -1135,6 +1144,9 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   const cwdLimitStatusEl = document.getElementById('cwdLimitStatus');
   const cwdBackBtn = document.getElementById('cwdBackBtn');
   const grammarStatusEl = document.getElementById('grammarStatus');
+  const grammarWorkRow = document.getElementById('grammarWorkRow');
+  const grammarWorkImage = document.getElementById('grammarWorkImage');
+  const grammarWorkMessage = document.getElementById('grammarWorkMessage');
   const grammarLearningPanel = document.getElementById('grammarLearningPanel');
   const grammarLearningHead = document.getElementById('grammarLearningHead');
   const grammarLearningBody = document.getElementById('grammarLearningBody');
@@ -1679,7 +1691,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         '\nLocal findings (may be wrong and must be independently judged):\n' + JSON.stringify(findings) +
         '\nEscalation reason:\n' + JSON.stringify(String(routeReason || ''));
 
-      const result = await dokiWithTimeout(model.generateContent(prompt), 16000, 'Gemini verifier');
+      const result = await dokiWithTimeout(model.generateContent(prompt), 5000, 'Gemini verifier');
       const raw = result && result.response && typeof result.response.text === 'function'
         ? result.response.text()
         : '';
@@ -1718,7 +1730,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       });
       return !covered;
     });
-    if(hasUnresolvedNoSuggestion) reasons.push('Harper issue without a confident replacement');
+    const strongContextSignal = signals.crossSentencePronoun || signals.conditional || signals.participle || (signals.temporal && (signals.priorTemporal || ctx.length>0)) || hasComplexClauseSignals(text);
+    if(hasUnresolvedNoSuggestion && strongContextSignal) reasons.push('Harper issue without a confident replacement in a contextual sentence');
     if(signals.crossSentencePronoun) reasons.push('cross-sentence pronoun/reference');
     if(signals.conditional) reasons.push('conditional or modal-perfect structure');
     if(signals.participle) reasons.push('opening participle/modifier structure');
@@ -2120,24 +2133,29 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     'Doki is interrogating the verbs…',
     'Ruffling the grammar feathers…',
     'The pond council is double-checking this…',
-    'Doki is consulting absolutely nobody…'
+    'Doki is consulting absolutely nobody…',
+    'Calculating with approximately three brain cells…'
   ];
   let grammarIndicatorTimer=null;
   let grammarIndicatorRotator=null;
   function startGrammarAsyncIndicator(){
-    if(!grammarAsyncIndicator)return;
     if(grammarIndicatorTimer)clearTimeout(grammarIndicatorTimer);
     if(grammarIndicatorRotator)clearInterval(grammarIndicatorRotator);
     grammarIndicatorTimer=setTimeout(function(){
-      grammarAsyncIndicator.classList.add('visible');
-      grammarAsyncIndicator.setAttribute('aria-hidden','false');
+      if(!grammarWorkRow)return;
+      grammarWorkRow.classList.add('visible');
+      grammarWorkRow.classList.remove('success');
+      grammarWorkRow.setAttribute('aria-hidden','false');
       let i=0;
-      grammarAsyncMessage.textContent=GRAMMAR_LOADING_MESSAGES[0];
+      if(grammarWorkImage) grammarWorkImage.src='doki-loading.webp';
+      if(grammarWorkMessage) grammarWorkMessage.textContent=GRAMMAR_LOADING_MESSAGES[0];
+      scrollToBottom();
       grammarIndicatorRotator=setInterval(function(){
+        if(!grammarWorkRow || !grammarWorkRow.isConnected)return;
         i=(i+1)%GRAMMAR_LOADING_MESSAGES.length;
-        grammarAsyncMessage.textContent=GRAMMAR_LOADING_MESSAGES[i];
-      },1000);
-    },240);
+        if(grammarWorkMessage) grammarWorkMessage.textContent=GRAMMAR_LOADING_MESSAGES[i];
+      },900);
+    },180);
   }
   function stopGrammarAsyncIndicator(){
     if(grammarIndicatorTimer)clearTimeout(grammarIndicatorTimer);
@@ -2147,6 +2165,10 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     if(grammarAsyncIndicator){
       grammarAsyncIndicator.classList.remove('visible');
       grammarAsyncIndicator.setAttribute('aria-hidden','true');
+    }
+    if(grammarWorkRow){
+      grammarWorkRow.classList.remove('visible');
+      grammarWorkRow.setAttribute('aria-hidden','true');
     }
   }
 
@@ -2204,17 +2226,28 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       }
     }
 
-    // Never hold the user's send path on Harper readiness. If the worker is ready,
-    // refine immediately in the background; if it is still warming, attach once and
-    // refine when ready. The caller receives the local fallback immediately.
+    // Never hold the user's send path on Harper readiness. If a safe local
+    // correction already exists, show it immediately. Otherwise keep the
+    // grammar work indicator alive while Harper finishes in the background.
+    if(fallbackNow.length){
+      showGrammarStage3BResult(fallbackNow,text,scanTokenAtStart);
+    }else{
+      startGrammarAsyncIndicator();
+    }
     if(window.dokiHarper && window.dokiHarper.linter){
       if(window.dokiHarper.ready){
         void refineWithHarper(window.dokiHarper.linter);
       }else if(window.dokiHarperReady && typeof window.dokiHarperReady.then==='function'){
         void window.dokiHarperReady.then(function(linter){ return refineWithHarper(linter); }).catch(function(){
-          if(scanTokenAtStart===grammarScanToken)showGrammarStage3BResult(fallbackNow,text,scanTokenAtStart);
+          if(scanTokenAtStart===grammarScanToken){
+            stopGrammarAsyncIndicator();
+            showGrammarStage3BResult(fallbackNow,text,scanTokenAtStart);
+          }
         });
       }
+    }else if(scanTokenAtStart===grammarScanToken){
+      stopGrammarAsyncIndicator();
+      showGrammarStage3BResult(fallbackNow,text,scanTokenAtStart);
     }
     return fallbackNow;
   }
@@ -2539,6 +2572,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
 
   function showGrammarStage3BResult(lints, originalText, scanToken){
     if(scanToken != null && scanToken !== grammarScanToken) return;
+    stopGrammarAsyncIndicator();
     if(!grammarStatusEl) return;
     if(!Array.isArray(lints)){
       grammarStatusEl.className='grammar-status offline';
@@ -2625,16 +2659,10 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
 
     if(finalCombined.length===0){
       hideGrammarLearningPanel();
-      if(lints.dokiReviewStatus === 'uncertain'){
-        grammarStatusEl.className='grammar-status clean';
-        grammarStatusEl.textContent='✓ No safe correction found — Doki kept your sentence unchanged';
-      }else{
-        // Ordinary clean messages do not need a persistent grammar banner.
-        // Keep the area quiet so normal factual/conversational replies do not look
-        // like the grammar checker is the main response.
-        grammarStatusEl.className='grammar-status';
-        grammarStatusEl.textContent='';
-      }
+      // Clean or uncertain sentences stay quiet. Do not expose internal
+      // verification wording such as “No safe correction found” to the user.
+      grammarStatusEl.className='grammar-status';
+      grammarStatusEl.textContent='';
       return;
     }
 
@@ -2680,9 +2708,11 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     meterEl.innerHTML = '&nbsp;';
     stopGrammarAsyncIndicator();
 
-    // Pass 3B adds local correction/explanation/learning UI. Pond Points are still not awarded here; that belongs to Pass 3C.
+    // Pass 3B keeps grammar feedback inside the default chat. The grammar
+    // function owns its asynchronous UI lifecycle so the Doki loader remains
+    // visible until the real Harper/Gemini work actually finishes.
     const thisGrammarScan=++grammarScanToken;
-    void checkGrammarForStage3A(raw, contextBefore).then(function(lints){ showGrammarStage3BResult(lints, raw, thisGrammarScan); });
+    void checkGrammarForStage3A(raw, contextBefore);
 
     // DEFAULT CHAT IS THE ORIGINAL GRAMMAR-AWARE DOKI EXPERIENCE.
     // It does NOT use Gemini as the primary conversational responder.
