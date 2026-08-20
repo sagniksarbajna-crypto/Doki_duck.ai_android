@@ -982,7 +982,9 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     'Punctuation': {id:'punctuation', version:'1.0.0', category:'PUNCTUATION'},
     'Spelling': {id:'spelling_typography', version:'1.0.0', category:'SPELLING_TYPOGRAPHY'},
     'Contextual / unresolved grammar': {id:'contextual_unresolved', version:'1.0.0', category:'CONTEXTUAL'},
-    'Grammar / sentence structure': {id:'grammar_sentence_structure', version:'1.0.0', category:'SENTENCE_STRUCTURE'}
+    'Grammar / sentence structure': {id:'grammar_sentence_structure', version:'1.0.0', category:'SENTENCE_STRUCTURE'},
+    'Question / auxiliary': {id:'question_auxiliary_base_form', version:'1.0.0', category:'QUESTIONS'},
+    'Articles': {id:'articles_determiners', version:'1.0.0', category:'ARTICLES_DETERMINERS'}
   });
 
   function getDokiRuleMeta(ruleLabel){
@@ -998,6 +1000,155 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     get: function(){ return JSON.parse(JSON.stringify(DOKI_RULE_METADATA)); },
     getOne: function(labelOrId){ return {...getDokiRuleMeta(labelOrId)}; }
   };
+
+
+  // PASS 5: independent local Grammar Reference Layer.
+  // This is a deterministic, zero-network companion to Harper. It does NOT
+  // replace Harper and never overrides a confident Harper suggestion. Its job
+  // is to catch high-confidence grammar interactions that shallow linting can
+  // miss (for example: does + third-person verb -> base form) and to provide
+  // an independent second local signal before any Gemini escalation.
+  const DOKI_GRAMMAR_REFERENCE = Object.freeze({
+    id: 'doki_local_reference',
+    version: '1.0.0',
+    provider: 'local-deterministic',
+    network: false,
+    latencyTargetMs: 5
+  });
+  const DOKI_LANGUAGETOOL_CONFIG = {
+    enabled: false,
+    endpoint: '',
+    timeoutMs: 3500,
+    provider: 'language-tool-backend'
+  };
+
+  window.dokiGrammarReferenceLayer = {
+    info: function(){ return {...DOKI_GRAMMAR_REFERENCE, languageTool: {...DOKI_LANGUAGETOOL_CONFIG, endpoint: DOKI_LANGUAGETOOL_CONFIG.endpoint ? '[configured]' : ''}}; },
+    configureLanguageTool: function(endpoint, enabled){
+      DOKI_LANGUAGETOOL_CONFIG.endpoint=String(endpoint||'').trim();
+      DOKI_LANGUAGETOOL_CONFIG.enabled=!!DOKI_LANGUAGETOOL_CONFIG.endpoint && enabled !== false;
+      return this.info();
+    },
+    providers: {
+      local: function(text, existingLints){ return buildDokiGrammarReferenceLints(text, existingLints || []); },
+      languageTool: async function(text, contextBefore){
+        if(!DOKI_LANGUAGETOOL_CONFIG.enabled || !DOKI_LANGUAGETOOL_CONFIG.endpoint) return {ok:false, disabled:true, lints:[]};
+        const controller=new AbortController();
+        const timer=setTimeout(function(){ controller.abort(); }, DOKI_LANGUAGETOOL_CONFIG.timeoutMs);
+        try{
+          const response=await fetch(DOKI_LANGUAGETOOL_CONFIG.endpoint,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+              text:String(text||''),
+              context:Array.isArray(contextBefore)?contextBefore.slice(-DOKI_CONTEXT_MAX_SENTENCES):[]
+            }),
+            signal:controller.signal,
+            credentials:'same-origin'
+          });
+          if(!response.ok) return {ok:false,status:response.status,lints:[]};
+          const data=await response.json();
+          return {ok:true,lints:normalizeReferenceProviderLints(data, text), provider:'language-tool-backend'};
+        }catch(error){
+          return {ok:false,error:error,lints:[]};
+        }finally{
+          clearTimeout(timer);
+        }
+      }
+    }
+  };
+
+  function normalizeReferenceProviderLints(data, originalText){
+    const source=String(originalText||'');
+    // Accept either our normalized backend shape (lints[]) or native
+    // LanguageTool-style matches[] so the frontend remains provider-agnostic.
+    const raw = Array.isArray(data && data.lints)
+      ? data.lints
+      : (Array.isArray(data && data.matches)
+        ? data.matches.map(function(match){
+            const offset=Number(match.offset);
+            const length=Number(match.length);
+            return {
+              problem: Number.isFinite(offset) && Number.isFinite(length) ? source.slice(offset, offset+length) : '',
+              start: offset,
+              end: Number.isFinite(offset) && Number.isFinite(length) ? offset+length : -1,
+              replacements: Array.isArray(match.replacements) ? match.replacements.map(function(r){ return r && (r.value || r.replacement || ''); }).filter(Boolean) : [],
+              rule: match.rule && (match.rule.id || match.rule.category || match.rule.issueType) || match.category || 'Grammar Reference',
+              message: match.message || '',
+              category: match.rule && (match.rule.category || match.rule.issueType) || match.category || ''
+            };
+          })
+        : (Array.isArray(data) ? data : []));
+    const out=[];
+    raw.slice(0,12).forEach(function(item){
+      if(!item) return;
+      const problem=String(item.problem || item.original || '').trim();
+      const replacement=String(item.replacement || (Array.isArray(item.replacements) && item.replacements[0]) || '').trim();
+      let start=Number.isFinite(Number(item.start)) ? Number(item.start) : -1;
+      let end=Number.isFinite(Number(item.end)) ? Number(item.end) : -1;
+      if((start<0 || end<start) && problem){
+        const idx=source.indexOf(problem);
+        if(idx>=0){ start=idx; end=idx+problem.length; }
+      }
+      if(start<0 || end<=start || !replacement) return;
+      out.push({
+        start,end,
+        span:function(){return {start,end};},
+        problem,
+        replacement,
+        rule:String(item.rule || item.category || 'Grammar Reference'),
+        ruleId:String(item.ruleId || ('reference_'+String(item.rule || item.category || 'grammar').toLowerCase().replace(/[^a-z0-9]+/g,'_'))),
+        ruleVersion:String(item.ruleVersion || '1.0.0'),
+        why:String(item.why || item.message || 'Independent grammar reference found a possible correction.'),
+        source:'reference',
+        referenceProvider:'language-tool-backend'
+      });
+    });
+    return out;
+  }
+
+  // Blind-Spot Trigger Registry: deliberately narrow structural checks that
+  // justify a second reference engine even when Harper reports CLEAN. Each trigger
+  // must be a known interaction where shallow/local linting can miss an error.
+  const DOKI_BLIND_SPOT_REGISTRY = Object.freeze([
+    {id:'AUXILIARY_BASE_FORM', test:function(t){ return /\b(?:does|do|did)\s+(?:i|you|we|they|he|she|it|this|that|these|those|[A-Za-z]+)\s+[A-Za-z]+(?:s|ed|en)\b/i.test(t); }},
+    {id:'MODAL_BASE_FORM', test:function(t){ return /\b(?:can|could|may|might|must|shall|should|will|would)\s+[A-Za-z]+(?:s|ed|en)\b/i.test(t); }},
+    {id:'DISTRIBUTIVE_AGREEMENT', test:function(t){ return /\b(?:each|every|either|neither)\b[^.!?]{0,60}\b(?:are|were|have|do)\b/i.test(t); }},
+    {id:'ARTICLE_SUPERLATIVE', test:function(t){ return /\b(?:is|was|became|remains|seems|looks)\s+(?:best|worst|biggest|smallest|oldest|youngest|strongest|weakest|most\s+[A-Za-z-]+)\s+[A-Za-z]+\b/i.test(t); }},
+    {id:'DOUBLE_COMPARATIVE', test:function(t){ return /\bmore\s+[A-Za-z]+er\b|\bmost\s+[A-Za-z]+est\b/i.test(t); }},
+    {id:'QUESTION_INVERSION', test:function(t){ return /\b(?:who|what|where|when|why|how)\s+(?:i|you|we|they|he|she|it)\s+(?:is|are|was|were|do|does|did|has|have)\b/i.test(t) && /\?\s*$/.test(t); }},
+    {id:'QUESTION_PREPOSITION', test:function(t){ return /\b(?:on|at)\s+class\b/i.test(t) && /\b(?:who|what|where|when|why|how)\b/i.test(t) && /\?\s*$/.test(t); }},
+    {id:'CROSS_SENTENCE_REFERENCE', test:function(t,ctx){ return Array.isArray(ctx) && ctx.length>0 && /^(he|she|they|it|this|that|these|those)\b/i.test(t.trim()); }}
+  ]);
+
+  function getDokiBlindSpotSignals(text, contextBefore){
+    const t=String(text||'');
+    const ctx=Array.isArray(contextBefore)?contextBefore:[];
+    const signals=[];
+    DOKI_BLIND_SPOT_REGISTRY.forEach(function(entry){
+      try{ if(entry.test(t,ctx)) signals.push(entry.id); }catch(e){}
+    });
+    return {triggered:signals.length>0,signals:signals};
+  }
+
+  function sameReferenceCorrection(a,b){
+    const aList=Array.isArray(a)?a:[], bList=Array.isArray(b)?b:[];
+    return aList.some(function(x){
+      const xp=String(x.problem||'').trim().toLowerCase();
+      const xr=String(x.replacement||suggestionOfLint(x)||'').trim().toLowerCase();
+      return !!xp && !!xr && bList.some(function(y){
+        return xp===String(y.problem||'').trim().toLowerCase() && xr===String(y.replacement||suggestionOfLint(y)||'').trim().toLowerCase();
+      });
+    });
+  }
+
+  function referenceDisagreement(localLints, referenceLints){
+    const local=Array.isArray(localLints)?localLints.filter(function(x){return !!suggestionOfLint(x);}):[];
+    const ref=Array.isArray(referenceLints)?referenceLints.filter(function(x){return !!suggestionOfLint(x);}):[];
+    if(!ref.length) return false;
+    if(!local.length) return true;
+    return !sameReferenceCorrection(local,ref);
+  }
 
   function logGrammarFeedback(entry){
     try {
@@ -2312,6 +2463,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     if(!text || !text.trim()) return [];
     const scanTokenAtStart=grammarScanToken;
     const fallbackNow=buildDokiFallbackLints(text, []);
+    const referenceNow=buildDokiGrammarReferenceLints(text, fallbackNow);
+    const localCandidates=fallbackNow.concat(referenceNow);
     if(grammarStatusEl){grammarStatusEl.className='grammar-status';grammarStatusEl.textContent='';}
     hideGrammarLearningPanel();
 
@@ -2319,32 +2472,82 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       if(!linter || scanTokenAtStart!==grammarScanToken)return;
       const context=contextBefore||[];
       try{
-        if(!fallbackNow.length)startGrammarAsyncIndicator();
+        if(!localCandidates.length)startGrammarAsyncIndicator();
         const lints=await dokiWithTimeout(linter.lint(text),2500,'Harper grammar scan');
         if(scanTokenAtStart!==grammarScanToken)return;
         const safeLints=Array.isArray(lints)?lints:[];
         const route=getDokiEscalation(text,context,safeLints);
         const properNounRisk=hasProperNounRisk(text,safeLints);
+        const blindSpots=getDokiBlindSpotSignals(text,context);
         dokiLastRoute=route.route;
-        dokiLastRouteReason=route.reason+(properNounRisk?'; possible proper noun/spelling ambiguity':'');
-        window.dokiGrammarRouting={route:route.route,reason:dokiLastRouteReason,context:context,timestamp:Date.now()};
+        dokiLastRouteReason=route.reason+(blindSpots.triggered?'; blind-spot:'+blindSpots.signals.join(','):'')+(properNounRisk?'; protected-term risk':'');
+        window.dokiGrammarRouting={route:route.route,reason:dokiLastRouteReason,blindSpots:blindSpots.signals,context:context,timestamp:Date.now()};
         const contextualEscalation=route.route==='contextual';
-        const hasSafeLocal=safeLints.some(function(l){return !!suggestionOfLint(l);})||fallbackNow.length>0;
+        const highConfidenceLocal = !properNounRisk && (
+          safeLints.some(function(l){return !!suggestionOfLint(l);}) ||
+          fallbackNow.some(function(l){return !!suggestionOfLint(l);}) ||
+          referenceNow.some(function(l){return !!suggestionOfLint(l);})
+        );
+        const localCandidateLints=safeLints.concat(fallbackNow, referenceNow);
 
-        // High-confidence local grammar is the default authority. Do NOT spend a
-        // Gemini request merely because a contextual signal exists. Gemini is only
-        // justified when the local result is unresolved, or when proper-noun risk
-        // specifically makes the local result unsafe to trust.
-        if(hasSafeLocal && !properNounRisk){
+        // Tier 1: a high-confidence local correction wins immediately. A second
+        // engine must never override a deterministic local result.
+        if(highConfidenceLocal && !contextualEscalation && !properNounRisk){
           stopGrammarAsyncIndicator();
-          showGrammarStage3BResult(safeLints.length?safeLints:fallbackNow,text,scanTokenAtStart);
+          showGrammarStage3BResult(safeLints.length?safeLints:localCandidates,text,scanTokenAtStart);
           return;
         }
 
-        const shouldEscalate=(contextualEscalation||properNounRisk) && (!hasSafeLocal || properNounRisk);
+        // Tier 2: known blind spot -> independent reference engine. This is the
+        // important Harper-CLEAN protection: Harper does not have to flag a problem
+        // before LanguageTool gets a chance to inspect a known structural blind spot.
+        if(!highConfidenceLocal && blindSpots.triggered && !contextualEscalation && !properNounRisk){
+          startGrammarAsyncIndicator();
+          const refResult=await window.dokiGrammarReferenceLayer.providers.languageTool(text,context);
+          if(scanTokenAtStart!==grammarScanToken)return;
+          const referenceLints=Array.isArray(refResult && refResult.lints)?refResult.lints:[];
+          if(refResult && refResult.ok){
+            if(!referenceLints.length){
+              // The independent reference engine found no correction, so there is no
+              // reason to spend Gemini tokens merely because the sentence looked unusual.
+              stopGrammarAsyncIndicator();
+              showGrammarStage3BResult(safeLints.length?safeLints:localCandidates,text,scanTokenAtStart);
+              return;
+            }
+            const agreement = sameReferenceCorrection(localCandidateLints, referenceLints);
+            if(agreement){
+              // Independent agreement is enough for a local correction. Gemini is not
+              // required when two local/reference signals converge.
+              stopGrammarAsyncIndicator();
+              showGrammarStage3BResult(referenceLints,text,scanTokenAtStart);
+              return;
+            }
+            // Disagreement or reference-only evidence is escalated to Gemini as the
+            // final semantic verifier. The reference result itself is never shown blindly.
+            const verified=await runDokiGeminiVerifier(text,context,referenceLints,dokiLastRouteReason+'; independent reference disagreement');
+            if(scanTokenAtStart!==grammarScanToken)return;
+            let merged=[];
+            if(verified && verified.ok && verified.status==='corrected'){
+              merged=mergeGeminiResultIntoLints(text,[],verified,properNounRisk,false);
+            }
+            merged.dokiReviewStatus=(!verified||!verified.ok||verified.status!=='corrected')?'uncertain':'corrected';
+            stopGrammarAsyncIndicator();
+            showGrammarStage3BResult(merged,text,scanTokenAtStart);
+            return;
+          }
+          // Reference provider unavailable: do not turn infrastructure failure into
+          // a Gemini call or a visible grammar error. Preserve the normal local-safe UI.
+          stopGrammarAsyncIndicator();
+          showGrammarStage3BResult(safeLints.length?safeLints:localCandidates,text,scanTokenAtStart);
+          return;
+        }
+
+        // Tier 3: only a genuine contextual case reaches Gemini directly. A mere
+        // lack of a local correction is not enough.
+        const shouldEscalate=contextualEscalation && !highConfidenceLocal;
         if(!shouldEscalate){
           stopGrammarAsyncIndicator();
-          showGrammarStage3BResult(safeLints.length?safeLints:fallbackNow,text,scanTokenAtStart);
+          showGrammarStage3BResult(safeLints.length?safeLints:localCandidates,text,scanTokenAtStart);
           return;
         }
 
@@ -2362,15 +2565,15 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         stopGrammarAsyncIndicator();
         if(scanTokenAtStart!==grammarScanToken)return;
         // Fast local fallback remains the visible safe path on any Harper/Gemini delay.
-        showGrammarStage3BResult(fallbackNow,text,scanTokenAtStart);
+        showGrammarStage3BResult(localCandidates,text,scanTokenAtStart);
       }
     }
 
     // Never hold the user's send path on Harper readiness. If a safe local
     // correction already exists, show it immediately. Otherwise keep the
     // grammar work indicator alive while Harper finishes in the background.
-    if(fallbackNow.length){
-      showGrammarStage3BResult(fallbackNow,text,scanTokenAtStart);
+    if(localCandidates.length){
+      showGrammarStage3BResult(localCandidates,text,scanTokenAtStart);
     }else{
       startGrammarAsyncIndicator();
     }
@@ -2381,13 +2584,13 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         void window.dokiHarperReady.then(function(linter){ return refineWithHarper(linter); }).catch(function(){
           if(scanTokenAtStart===grammarScanToken){
             stopGrammarAsyncIndicator();
-            showGrammarStage3BResult(fallbackNow,text,scanTokenAtStart);
+            showGrammarStage3BResult(localCandidates,text,scanTokenAtStart);
           }
         });
       }
     }else if(scanTokenAtStart===grammarScanToken){
       stopGrammarAsyncIndicator();
-      showGrammarStage3BResult(fallbackNow,text,scanTokenAtStart);
+      showGrammarStage3BResult(localCandidates,text,scanTokenAtStart);
     }
     return fallbackNow;
   }
@@ -2483,6 +2686,133 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       corrected = corrected.slice(0,edit.start) + edit.replacement + corrected.slice(edit.end);
     }
     return corrected;
+  }
+
+
+  function buildDokiGrammarReferenceLints(text, existingLints){
+    const out=[];
+    const source=String(text || '');
+    const existing=Array.isArray(existingLints) ? existingLints : [];
+    const referenceRule = function(id, category){
+      return { id:id, version:'1.0.0', category:category };
+    };
+    function spanOf(l){
+      try { return (l && typeof l.span === 'function') ? l.span() : null; } catch(e){ return null; }
+    }
+    function hasOverlap(start,end){
+      return existing.some(function(l){
+        const sp=spanOf(l);
+        return sp && !(end<=sp.start || start>=sp.end);
+      }) || out.some(function(l){ return !(end<=l.start || start>=l.end); });
+    }
+    function isProtectedWord(word){
+      const clean=String(word||'').trim().toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/g,'').replace(/'s$/,'');
+      return ['doki','doki duck','doki duck ai','doki grammar police','pond points','pond leaderboard','trophy room'].includes(clean);
+    }
+    function add(start,end,problem,replacement,rule,why){
+      if(!problem || !replacement || problem.trim().toLowerCase()===replacement.trim().toLowerCase()) return;
+      if(isProtectedWord(problem)) return;
+      if(hasOverlap(start,end)) return;
+      const meta=referenceRule(rule.id,rule.category);
+      out.push({
+        start,end,
+        span:function(){return {start,end};},
+        problem,
+        replacement,
+        rule:rule.label,
+        ruleId:meta.id,
+        ruleVersion:meta.version,
+        why,
+        source:'reference',
+        referenceProvider:'doki_local_reference'
+      });
+    }
+    const commonIrregularBase={
+      went:'go', gone:'go', did:'do', done:'do', was:'be', were:'be', been:'be', had:'have',
+      saw:'see', seen:'see', took:'take', taken:'take', ate:'eat', eaten:'eat', came:'come',
+      ran:'run', wrote:'write', written:'write', gave:'give', given:'give', made:'make',
+      knew:'know', known:'know', thought:'think', thought:'think', brought:'bring', bought:'buy',
+      found:'find', felt:'feel', slept:'sleep', left:'leave', chose:'choose', drove:'drive'
+    };
+    const baseWhitelist = new Set([
+      'be','have','do','go','come','see','eat','drink','sleep','walk','run','work','study','play','like',
+      'love','want','need','know','think','feel','look','live','use','make','take','give','tell','ask',
+      'answer','call','cook','read','write','watch','listen','learn','teach','help','try','understand',
+      'remember','forget','start','stop','open','close','clean','buy','sell','pay','share','follow',
+      'miss','hate','enjoy','prefer','plan','decide','choose','explain','discuss','practice','train',
+      'exercise','swim','jump','build','fix','break','create','design','draw','paint','sing','dance'
+    ]);
+    function toBase(verb){
+      const low=verb.toLowerCase();
+      if(commonIrregularBase[low]) return commonIrregularBase[low];
+      if(/ies$/i.test(verb) && verb.length>4) return verb.slice(0,-3)+'y';
+      if(/(?:ches|shes|xes|zes|oes|sses)$/i.test(verb)) return verb.slice(0,-2);
+      if(/s$/i.test(verb) && !/ss$/i.test(verb)) return verb.slice(0,-1);
+      return '';
+    }
+
+    // Rule R1: do/does/did + non-base main verb.
+    // This catches both statements and questions, including the user's known
+    // failure case: "Does she cooks well?" -> "cook".
+    const auxPositive=/\b(does|do|did)\s+([A-Za-z]+)\b/gi;
+    let m;
+    while((m=auxPositive.exec(source))){
+      const aux=m[1].toLowerCase();
+      const verb=m[2];
+      const low=verb.toLowerCase();
+      let base=toBase(verb);
+      if(!base || base===low || !(/[a-z]/i.test(verb))) continue;
+      if(!baseWhitelist.has(base) && !commonIrregularBase[low]) continue;
+      // Do not interfere with proper nouns or already-base forms.
+      if(/^[A-Z][a-z]+$/.test(verb)) continue;
+      const start=m.index+m[0].lastIndexOf(verb);
+      const rule={id:'aux_do_does_did_base_form',category:'AUXILIARY_VERBS',label:'Auxiliary verb'};
+      const why=aux==='did'
+        ? 'After “did”, the main verb normally stays in its base form.'
+        : 'After “do” or “does”, the main verb normally stays in its base form.';
+      add(start,start+verb.length,verb,base,rule,why);
+    }
+
+    // Rule R2: modal + non-base main verb.
+    const modals=/\b(can|could|may|might|must|shall|should|will|would)\s+([A-Za-z]+)\b/gi;
+    while((m=modals.exec(source))){
+      const verb=m[2], low=verb.toLowerCase(), base=toBase(verb);
+      if(!base || base===low) continue;
+      if(!baseWhitelist.has(base) && !commonIrregularBase[low]) continue;
+      if(/^[A-Z][a-z]+$/.test(verb)) continue;
+      const start=m.index+m[0].lastIndexOf(verb);
+      add(start,start+verb.length,verb,base,{id:'modal_base_form',category:'MODALS',label:'Auxiliary verb'},'After a modal verb, the main verb normally stays in its base form.');
+    }
+
+    // Rule R3: question inversion with do/does/did + third-person -s/-ed.
+    // This is a narrower confirmation layer so valid nouns/phrases are not
+    // overcorrected.
+    const question=/\b(does|do|did)\s+(?:you|we|they|he|she|it|I)\s+([A-Za-z]+)\b/gi;
+    while((m=question.exec(source))){
+      const aux=m[1].toLowerCase(), verb=m[2];
+      if(/^(?:well|badly|here|there|today|tomorrow|yesterday)$/i.test(verb)) continue;
+      const low=verb.toLowerCase();
+      let base=toBase(verb);
+      if(!base || base===low) continue;
+      if(!baseWhitelist.has(base) && !commonIrregularBase[low]) continue;
+      const start=m.index+m[0].lastIndexOf(verb);
+      add(start,start+verb.length,verb,base,{id:'question_auxiliary_base_form',category:'QUESTIONS',label:'Question / auxiliary'},'Questions formed with “do”, “does”, or “did” use the base form of the main verb.');
+    }
+
+    // Rule R4: article + superlative noun phrase. Keep the existing high-confidence
+    // behavior but expose it through the independent reference layer as well.
+    const superlative=/\b(is|was|became|remains|seems|looks)\s+(best|worst|biggest|smallest|oldest|youngest|strongest|weakest|most\s+[A-Za-z-]+)\s+([A-Za-z][A-Za-z'-]*)\b/gi;
+    while((m=superlative.exec(source))){
+      const phrase=m[2];
+      const followingWord=String(m[3]||'').toLowerCase();
+      // Valid complements such as "is best at mathematics" and
+      // "is best known for..." are not missing-article noun phrases.
+      if(['at','known','suited','able','for','to','from','of'].includes(followingWord)) continue;
+      const start=m.index+m[0].indexOf(phrase);
+      add(start,start+phrase.length,phrase,'the '+phrase,{id:'superlative_definite_article',category:'ARTICLES',label:'Articles'},'A singular superlative noun phrase normally takes the definite article “the”.');
+    }
+
+    return out;
   }
 
   function buildDokiFallbackLints(text, existingLints){
@@ -2585,8 +2915,11 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     const missingSuperlativeArticle=/\b(is|was|became|remains|seems|looks)\s+(best|worst|biggest|smallest|oldest|youngest|strongest|weakest|most\s+[A-Za-z-]+)\s+([A-Za-z][A-Za-z'-]*)\b/gi;
     while((m=missingSuperlativeArticle.exec(source))){
       const adjectivePhrase=m[2];
+      const followingWord=String(m[3]||'').toLowerCase();
+      // Do not treat complements such as "best at mathematics" or
+      // "best known for" as missing-article noun phrases.
+      if(['at','known','suited','able','for','to','from','of'].includes(followingWord)) continue;
       const start=m.index+m[0].indexOf(adjectivePhrase);
-      // Avoid replacing a phrase that already contains an explicit determiner.
       add(start,start+adjectivePhrase.length,adjectivePhrase,'the '+adjectivePhrase,'Articles','A singular superlative noun phrase normally takes the definite article “the”.');
     }
 
@@ -2773,6 +3106,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     // supply a high-confidence replacement when Harper reports a problem but
     // returns no suggestion. It must never replace a confident Harper suggestion.
     const fallback=buildDokiFallbackLints(originalText,filtered);
+    const reference=buildDokiGrammarReferenceLints(originalText, filtered.concat(fallback));
     const combined=[];
     function addNormalized(item){
       if(!item) return;
@@ -2815,6 +3149,16 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
         return sp && fp && !(fp.end<=sp.start || fp.start>=sp.end) && !!suggestionOfLint(l);
       });
       if(!already && !hasConfidentHarper) addNormalized(f);
+    });
+
+    reference.forEach(function(f){
+      const n=normalizeGrammarLint(f,originalText);
+      if(!n.problem || !n.replacement) return;
+      const duplicate=combined.some(function(x){
+        return x.problem.trim().toLowerCase()===n.problem.trim().toLowerCase() &&
+          x.replacement.trim().toLowerCase()===n.replacement.trim().toLowerCase();
+      });
+      if(!duplicate) combined.push(n);
     });
 
     // Never display an unresolved Harper message when a same-span Doki fallback
