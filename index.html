@@ -1256,19 +1256,25 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
 
   function hasComplexClauseSignals(text){
     const t=String(text||'');
-    const conjunctions=(t.match(/\b(and|but|although|because|while|when|if|unless|since|before|after|though|which|who|that)\b/gi)||[]).length;
-    const commas=(t.match(/,/g)||[]).length;
+    const conjunctions=(t.match(/\b(and|but|although|because|while|when|if|unless|since|before|after|though)\b/gi)||[]).length;
     const relative=(t.match(/\b(who|which|whom|whose|that)\b/gi)||[]).length;
-    return conjunctions >= 2 || commas >= 2 || relative >= 1 && conjunctions >= 1;
+    const commas=(t.match(/,/g)||[]).length;
+    // Complexity is a contextual signal only when there is more than one
+    // structural cue. A single "and", comma, "that", etc. is common English
+    // and must not by itself activate Gemini.
+    return conjunctions >= 2 || relative >= 1 && (conjunctions >= 1 || commas >= 2) || commas >= 3;
   }
 
   function hasContextSensitiveSignals(text, previous){
     const t=String(text||'').toLowerCase();
     const ctx=Array.isArray(previous)?previous:[];
     const pronoun=/\b(he|she|they|it|them|their|his|her|this|that|these|those)\b/i.test(text||'');
-    const conditional=/\b(if|unless)\b/i.test(t) || /\b(would|could|might|should)\s+have\b/i.test(t);
+    const conditional=/\b(if|unless)\b/i.test(t) || /\b(would|could|might|should|may|must)\s+(?:have|be|go|do|were)\b/i.test(t);
     const participle=/^[\s\"']*(walking|running|having|being|after|while|when)\b[^.!?]*,/i.test(String(text||''));
     const temporal=/\b(yesterday|today|tomorrow|last\s+(?:night|week|month|year)|earlier|previously|now|already|still|yet)\b/i.test(t);
+    // A temporal word alone is NOT a Gemini trigger. It matters only when
+    // cross-sentence tense context is explicitly present and a local finding
+    // remains unresolved.
     const priorTemporal=ctx.some(function(x){ return /\b(yesterday|today|tomorrow|last\s+(?:night|week|month|year)|earlier|previously|now|already|still|yet)\b/i.test(x); });
     const crossSentencePronoun=ctx.length>0 && /^(he|she|they|it|this|that|these|those)\b/i.test(String(text||'').trim());
     return {pronoun,conditional,participle,temporal,priorTemporal,crossSentencePronoun};
@@ -1708,21 +1714,17 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
 
   function getDokiEscalation(text, previous, lints){
     const ctx=Array.isArray(previous)?previous:[];
-    const signals=hasContextSensitiveSignals(text,ctx);
-    const reasons=[];
     const normalized=Array.isArray(lints)?lints:[];
+    const fallbackForGate=buildDokiFallbackLints(text, normalized);
+    const safeLocalFinding=normalized.some(function(l){
+      return !!suggestionOfLint(l);
+    }) || fallbackForGate.length>0;
 
-    // Safe local path: short/simple messages with no contextual signals.
     if(!String(text||'').trim()) return {route:'local',reason:'empty'};
 
-    // A missing Harper suggestion is only an escalation signal when Doki also
-    // lacks a high-confidence local replacement for the same span. This keeps
-    // ordinary cases such as “She go” local while reserving Gemini for genuinely
-    // unresolved cases.
-    const fallbackForGate=buildDokiFallbackLints(text, normalized);
-    const hasUnresolvedNoSuggestion=normalized.some(function(l){
-      const suggestion = safeSuggestions(l).length || (l && typeof l.replacement==='string' && l.replacement.trim());
-      if(suggestion) return false;
+    const hasUnresolvedFinding=normalized.some(function(l){
+      const hasSuggestion=!!suggestionOfLint(l);
+      if(hasSuggestion) return false;
       const sp=spanOfLint(l);
       const covered=fallbackForGate.some(function(f){
         const fp=typeof f.span==='function' ? f.span() : null;
@@ -1730,27 +1732,42 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       });
       return !covered;
     });
-    const strongContextSignal = signals.crossSentencePronoun || signals.conditional || signals.participle || (signals.temporal && signals.priorTemporal) || hasComplexClauseSignals(text);
-    if(hasUnresolvedNoSuggestion && strongContextSignal) reasons.push('Harper issue without a confident replacement in a contextual sentence');
-    if(signals.crossSentencePronoun) reasons.push('cross-sentence pronoun/reference');
-    if(signals.conditional) reasons.push('conditional or modal-perfect structure');
-    if(signals.participle) reasons.push('opening participle/modifier structure');
-    if(signals.temporal && (signals.priorTemporal || ctx.length>0)) reasons.push('possible tense/context dependency');
-    if(hasComplexClauseSignals(text)) reasons.push('complex clause structure');
 
-    // Context is useful only when there is actually something to compare against.
-    if(ctx.length>0 && (signals.crossSentencePronoun || (signals.temporal && signals.priorTemporal))){
-      reasons.push('recent context is relevant to the sentence');
+    const signals=hasContextSensitiveSignals(text,ctx);
+    const reasons=[];
+
+    // Proper-noun risk is a SUPPRESSION/validation signal, never a Gemini trigger.
+    // Names and places should not become cloud calls merely because Harper noticed
+    // a spelling-like finding.
+    const crossSentence = signals.crossSentencePronoun;
+    const strongContextSignal =
+      crossSentence ||
+      (signals.conditional && hasUnresolvedFinding) ||
+      (signals.participle && hasUnresolvedFinding) ||
+      (hasComplexClauseSignals(text) && hasUnresolvedFinding);
+
+    if(crossSentence) reasons.push('cross-sentence pronoun/reference');
+    if(signals.conditional && hasUnresolvedFinding) reasons.push('conditional or modal context with unresolved finding');
+    if(signals.participle && hasUnresolvedFinding) reasons.push('opening participle/modifier structure with unresolved finding');
+    if(hasComplexClauseSignals(text) && hasUnresolvedFinding) reasons.push('complex clause structure with unresolved finding');
+
+    // Temporal words alone are ordinary English and MUST NOT activate Gemini.
+    // Prior temporal context is considered only when a real unresolved finding
+    // exists and the sentence is explicitly cross-sentence/context dependent.
+    if(signals.temporal && signals.priorTemporal && hasUnresolvedFinding && crossSentence){
+      reasons.push('cross-sentence temporal dependency');
     }
 
-    // Avoid escalating very short conversational fragments by themselves.
-    if(String(text).trim().split(/\s+/).length < 3 && reasons.length){
-      return {route:'local',reason:'short conversational fragment'};
+    // No safe local correction + no genuine contextual trigger = stay local and
+    // suppress the unresolved finding rather than spending a Gemini call.
+    if(strongContextSignal && hasUnresolvedFinding){
+      return {route:'contextual',reason:[...new Set(reasons)].join('; ')};
     }
 
-    if(reasons.length) return {route:'contextual',reason:[...new Set(reasons)].join('; ')};
-    return {route:'local',reason:'high-confidence local path'};
+    if(safeLocalFinding) return {route:'local',reason:'high-confidence local path'};
+    return {route:'local',reason:'no justified Gemini escalation trigger'};
   }
+
   const incogBtn = document.getElementById('incogBtn');
   const headerStatus = document.getElementById('headerStatus');
   const themeColorMeta = document.getElementById('themeColorMeta');
@@ -2184,14 +2201,14 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       const context=contextBefore||[];
       try{
         if(!fallbackNow.length)startGrammarAsyncIndicator();
-        const lints=await dokiWithTimeout(linter.lint(text),3000,'Harper grammar scan');
+        const lints=await dokiWithTimeout(linter.lint(text),2500,'Harper grammar scan');
         if(scanTokenAtStart!==grammarScanToken)return;
         const safeLints=Array.isArray(lints)?lints:[];
         const route=getDokiEscalation(text,context,safeLints);
         const properNounRisk=hasProperNounRisk(text,safeLints);
         dokiLastRoute=route.route;
         dokiLastRouteReason=route.reason+(properNounRisk?'; possible proper noun/spelling ambiguity':'');
-        window.dokiGrammarRouting={route:(route.route==='contextual'||properNounRisk)?'contextual':'local',reason:dokiLastRouteReason,context:context,timestamp:Date.now()};
+        window.dokiGrammarRouting={route:route.route,reason:dokiLastRouteReason,context:context,timestamp:Date.now()};
         const contextualEscalation=route.route==='contextual';
         const hasSafeLocal=safeLints.some(function(l){return !!suggestionOfLint(l);})||fallbackNow.length>0;
 
@@ -2443,7 +2460,18 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       }
     }
 
-    // 3) Bare he/she/it + common base verb. Keep a curated list for high confidence.
+    // 3) High-confidence article rule for common superlatives. This is a
+    // deterministic local correction and must never require Gemini.
+    // Example: "Rita is best student." -> "Rita is the best student."
+    const missingSuperlativeArticle=/\b(is|was|became|remains|seems|looks)\s+(best|worst|biggest|smallest|oldest|youngest|strongest|weakest|most\s+[A-Za-z-]+)\s+([A-Za-z][A-Za-z'-]*)\b/gi;
+    while((m=missingSuperlativeArticle.exec(source))){
+      const adjectivePhrase=m[2];
+      const start=m.index+m[0].indexOf(adjectivePhrase);
+      // Avoid replacing a phrase that already contains an explicit determiner.
+      add(start,start+adjectivePhrase.length,adjectivePhrase,'the '+adjectivePhrase,'Articles','A singular superlative noun phrase normally takes the definite article “the”.');
+    }
+
+    // 4) Bare he/she/it + common base verb. Keep a curated list for high confidence.
     const bare=/\b(he|she|it)\s+([A-Za-z]+)\b/gi;
     while((m=bare.exec(source))){
       const subject=m[1].toLowerCase(), verb=m[2], low=verb.toLowerCase();
@@ -2460,7 +2488,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       add(start,start+verb.length,verb,replacement,'Subject–verb agreement',why);
     }
 
-    // 4) High-confidence plural subject + third-person singular verb.
+    // 5) High-confidence plural subject + third-person singular verb.
     // Avoid the old broad `word ending in s` heuristic: singular nouns such as
     // class, bus, news and glass must never be treated as plural automatically.
     const pluralNounSet=new Set([
@@ -2589,7 +2617,10 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     const contextualEscalation = !!(Array.isArray(lints) && lints.dokiReviewStatus === 'uncertain');
     const filtered=lints.filter(function(lint){
       const p=safeProblemText(lint).trim().toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/g,'').replace(/'s$/,'');
-      return !protectedTerms.includes(p) && sanitizeGrammarLint(originalText, lint, contextualEscalation);
+      // Never show a grammar card without an explicit safe replacement.
+      // Unresolved Harper findings are internal evidence, not user-facing errors.
+      const replacement=String(lint && lint.replacement != null ? lint.replacement : suggestionOfLint(lint) || '').trim();
+      return !!replacement && !protectedTerms.includes(p) && sanitizeGrammarLint(originalText, lint, contextualEscalation);
     });
 
     // Doki fallback is deliberately run against the raw Harper findings. It can
@@ -2664,7 +2695,6 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     if(finalCombined.length===0){
       hideGrammarLearningPanel();
       // Clean or uncertain sentences stay quiet. Do not expose internal
-      // verification wording such as “No safe correction found” to the user.
       grammarStatusEl.className='grammar-status';
       grammarStatusEl.textContent='';
       return;
@@ -2969,7 +2999,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       if(!ready) throw new Error('Local grammar engine did not become ready.');
 
       // One tiny local lint keeps the engine genuinely warm without touching Gemini.
-      await dokiWithTimeout(linter.lint('She go to college.'), 3000, 'Harper warm-up lint');
+      await dokiWithTimeout(linter.lint('She go to college.'), 2500, 'Harper warm-up lint');
       markFirstGrammarWarmupPassed();
       dokiGeminiFirstTitle.textContent='✅ Pond grammar engine ready.';
       dokiGeminiFirstNote.textContent='Doki is ready to catch grammar trouble locally. Gemini stays secondary.';
