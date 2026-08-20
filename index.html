@@ -10,6 +10,8 @@
 <meta name="theme-color" content="#707C5C" id="themeColorMeta">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
+<link rel="preload" as="image" href="doki-standing.png">
+<link rel="preload" as="image" href="doki-loading.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -384,6 +386,41 @@
   .phone.incognito .doki-cwd-inputbar input:focus{box-shadow:0 0 0 3px rgba(179,157,255,0.3);}
   .phone.incognito .doki-cwd-inputbar input::placeholder{color:#6b6784;}
   .phone.incognito .doki-cwd-back{background:#57508a;border-color:#8a84c9;}
+
+  /* First-launch Gemini check + responsive Doki loading states. */
+  .doki-gemini-first-check{position:absolute;left:14px;right:14px;top:126px;z-index:60;display:none;align-items:center;gap:12px;padding:10px 12px;border:2px solid var(--ink);border-radius:16px;background:#fffdf6;box-shadow:0 10px 24px rgba(0,0,0,.14);cursor:pointer;transition:transform .2s ease,opacity .2s ease,box-shadow .2s ease;}
+  .doki-gemini-first-check.visible{display:flex}
+  .doki-gemini-first-check:active{transform:scale(.985)}
+  .doki-gemini-first-check img{width:72px;height:72px;object-fit:contain;border-radius:12px;flex:0 0 auto;will-change:transform,opacity;backface-visibility:hidden}
+  .doki-gemini-first-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
+  .doki-gemini-first-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:900}
+  .doki-gemini-first-note{font-size:10.5px;line-height:1.35;opacity:.72}
+  .doki-gemini-first-check.checking{cursor:default;box-shadow:0 12px 28px rgba(0,0,0,.16)}
+  .doki-gemini-first-check.checking img{animation:dokiFirstCheckFloat .9s ease-in-out infinite alternate}
+  .doki-gemini-first-check.success{opacity:0;transform:translateY(-8px);pointer-events:none}
+  .doki-gemini-first-check.failed{border-color:#9a5b18}
+  .phone.incognito .doki-gemini-first-check{background:#2f2e3a;color:#eae7f5;border-color:#5b596a}
+  .phone.route-nonchat .doki-gemini-first-check{display:none!important}
+  @keyframes dokiFirstCheckFloat{from{transform:translateY(0) rotate(-2deg)}to{transform:translateY(-5px) rotate(2deg)}}
+
+  .grammar-async-indicator{display:none;align-items:center;gap:8px;min-height:30px;padding:3px 14px 5px;background:var(--cream);color:var(--olive-dark);font-size:10px;line-height:1.2}
+  .grammar-async-indicator.visible{display:flex}
+  .grammar-async-indicator img{width:38px;height:38px;object-fit:contain;border-radius:8px;flex:0 0 auto;will-change:transform;backface-visibility:hidden}
+  .grammar-async-indicator span{font-weight:800}
+  .phone.incognito .grammar-async-indicator{background:#232230;color:#c9c1ff}
+  .phone.route-nonchat .grammar-async-indicator{display:none!important}
+
+  .cwd-gemini-loading{position:relative;display:flex;align-items:center;min-height:78px;margin:2px 0 4px 34px;max-width:calc(100% - 42px);background:#fff;border:2px solid var(--ink);border-radius:18px;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.08)}
+  .cwd-gemini-loading img{width:82px;height:82px;object-fit:contain;flex:0 0 auto;transform:translateX(-4px);animation:cwdDuckBounce .8s ease-in-out infinite alternate;will-change:transform,opacity;backface-visibility:hidden}
+  .cwd-gemini-loading-copy{min-width:0;padding:9px 12px 9px 4px;font-size:11px;line-height:1.35;font-weight:900}
+  .cwd-gemini-loading-message{min-height:32px;display:flex;align-items:center}
+  .cwd-gemini-loading.flee img{animation:cwdDuckFlee .45s cubic-bezier(.2,.9,.3,1.2) forwards}
+  .cwd-gemini-loading.flee .cwd-gemini-loading-copy{opacity:0;transition:opacity .22s ease}
+  .cwd-gemini-loading.flee{overflow:visible;background:transparent;border-color:transparent;box-shadow:none;transition:background .18s ease,border-color .18s ease,box-shadow .18s ease}
+  .phone.incognito .cwd-gemini-loading{background:#2f2e3a;color:#eae7f5;border-color:#5b596a}
+  @keyframes cwdDuckBounce{from{transform:translate(-4px,3px) rotate(-2deg)}to{transform:translate(-4px,-7px) rotate(2deg)}}
+  @keyframes cwdDuckFlee{0%{transform:translate(-4px,3px) rotate(-2deg);opacity:1}55%{transform:translate(-34vw,-2px) rotate(-7deg);opacity:1}100%{transform:translate(calc(-1 * 120vw),-10px) rotate(-12deg);opacity:0}}
+  @media(max-width:430px){.doki-gemini-first-check{top:122px;left:10px;right:10px;padding:8px 10px}.doki-gemini-first-check img{width:62px;height:62px}.doki-gemini-first-title{font-size:14px}.grammar-async-indicator img{width:30px;height:30px}.cwd-gemini-loading{margin-left:30px;max-width:calc(100% - 34px)}}
   .doki-route-card{width:min(100%,560px);background:#fff;border:2px solid var(--ink);border-radius:20px;padding:22px 18px;box-shadow:0 10px 24px rgba(0,0,0,.08);text-align:center;}
   .doki-route-icon{font-size:38px;line-height:1;margin-bottom:8px;}
   .doki-route-title{font-family:'Baloo 2',sans-serif;font-size:1.45rem;font-weight:900;}
@@ -661,6 +698,14 @@
     </div>
   </div>
 
+  <div class="doki-gemini-first-check" id="dokiGeminiFirstCheck" role="button" tabindex="0" aria-label="Tap Doki to check Gemini for the first time">
+    <img id="dokiGeminiFirstImage" src="doki-standing.png" alt="Doki Duck">
+    <div class="doki-gemini-first-copy">
+      <div class="doki-gemini-first-title" id="dokiGeminiFirstTitle">🦆 Tap Doki to test the pond</div>
+      <div class="doki-gemini-first-note" id="dokiGeminiFirstNote">Tap Doki once to check Gemini for the first time. Normal Chat stays available.</div>
+    </div>
+  </div>
+
   <div class="doki-route-panel" id="dokiRoutePanel" aria-live="polite" aria-hidden="true">
     <div class="doki-route-card">
       <div class="doki-route-icon" id="dokiRouteIcon">🎯</div>
@@ -702,6 +747,10 @@
   </div>
 
   <div class="meter" id="meter">&nbsp;</div>
+  <div class="grammar-async-indicator" id="grammarAsyncIndicator" aria-live="polite" aria-hidden="true">
+    <img id="grammarAsyncImage" src="doki-loading.webp" alt="">
+    <span id="grammarAsyncMessage">Doki is checking the pond of grammar…</span>
+  </div>
 
   <div class="grammar-status" id="grammarStatus" aria-live="polite">Grammar engine: starting…</div>
   <div class="grammar-learning-panel" id="grammarLearningPanel" role="region" aria-label="Doki Grammar Police" aria-live="polite" aria-hidden="true">
@@ -734,7 +783,7 @@
     <button class="doki-menu-item" id="menuLeaderboardBtn" type="button"><span class="doki-menu-icon">📊</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Pond Leaderboard</span><span class="doki-menu-item-note">See the shared XP rankings</span></span><span class="doki-menu-arrow">›</span></button>
     <div class="doki-menu-divider" aria-hidden="true"></div>
     <div class="doki-menu-section">Learn &amp; Chat</div>
-    <button class="doki-menu-item" id="menuChatBtn" type="button"><span class="doki-menu-icon">🦆</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Chat with Doki</span><span class="doki-menu-item-note">Free-flowing Gemini conversation — no grammar scan, 15/day</span></span><span class="doki-menu-arrow">›</span></button>
+    <button class="doki-menu-item" id="menuChatBtn" type="button"><span class="doki-menu-icon">🦆</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Chat with Doki</span><span class="doki-menu-item-note">Gemini-only Doki conversation — 15/day</span></span><span class="doki-menu-arrow">›</span></button>
     <button class="doki-menu-item" id="menuAcademyBtn" type="button"><span class="doki-menu-icon">🎯</span><span class="doki-menu-item-copy"><span class="doki-menu-item-title">Pond Academy</span><span class="doki-menu-item-note">Practice grammar, skills and quizzes</span></span><span class="doki-menu-arrow">›</span></button>
   </nav>
 </aside>
@@ -821,7 +870,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   window.dokiHarperReady = harperLinter.setup().then(function(){
     window.dokiHarper.ready = true;
     const status = document.getElementById('grammarStatus');
-    if(status){ status.className='grammar-status clean'; status.textContent='✓ Grammar engine ready'; }
+    if(status){ status.className='grammar-status'; status.textContent=''; }
     return harperLinter;
   }).catch(function(error){
     window.dokiHarper.error = error;
@@ -951,7 +1000,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
       // Warm both Gemini roles in the background. Failures are non-fatal.
       // Grammar verifier and chat persona are intentionally independent.
       // Note: this only constructs the model objects — it does not call
-      // generateContent/generateContentStream, so no Gemini request is made
+      // generateContent, so no Gemini request is made
       // merely to test connectivity at startup.
       void initDokiGeminiVerifier();
       void initDokiChatGemini();
@@ -1046,6 +1095,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     syncAvailableAchievements();
     savePlayer();
     showApp();
+    setTimeout(function(){ maybeShowFirstGeminiCheck(); },0);
   }
   profileContinue.addEventListener('click', openTerms);
   profileUsername.addEventListener('keydown', e=>{ if(e.key==='Enter') profileAge.focus(); });
@@ -1070,6 +1120,12 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
   const inputEl = document.getElementById('userInput');
   const sendBtn = document.getElementById('sendBtn');
   const meterEl = document.getElementById('meter');
+  const grammarAsyncIndicator = document.getElementById('grammarAsyncIndicator');
+  const grammarAsyncMessage = document.getElementById('grammarAsyncMessage');
+  const dokiGeminiFirstCheck = document.getElementById('dokiGeminiFirstCheck');
+  const dokiGeminiFirstImage = document.getElementById('dokiGeminiFirstImage');
+  const dokiGeminiFirstTitle = document.getElementById('dokiGeminiFirstTitle');
+  const dokiGeminiFirstNote = document.getElementById('dokiGeminiFirstNote');
 
   // Chat with Doki: fully separate DOM references. Never shared with the
   // default grammar-aware chat above.
@@ -1523,61 +1579,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     return buildQuackReply(count);
   }
 
-  function createDokiStreamingRow(){
-    const row = document.createElement('div');
-    row.className = 'row bot';
-    row.insertAdjacentHTML('beforeend', botAvatarHTML());
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble quack-reply';
-    bubble.textContent = 'Doki is thinking… 🦆';
-    row.appendChild(bubble);
-    messagesEl.appendChild(row);
-    scrollToBottom();
-    return {row, bubble};
-  }
 
-  async function generateDokiChatReplyStream(userText, contextBefore, count, streamUi){
-    try {
-      const model = await initDokiChatGemini();
-      if(!model) return '';
-      const recent = (Array.isArray(contextBefore) ? contextBefore : []).slice(-2);
-      const prompt = 'Respond to this user message as Doki Duck AI. Keep the answer directly useful and grammatically correct. ' +
-        'Do not return instructions about logging in or accounts unless the user explicitly asks about authentication. ' +
-        'For affection or casual conversation, respond naturally rather than changing the subject. ' +
-        'Use recent conversation context only when it helps answer naturally. ' +
-        'Start with the direct answer, then optionally add one short Doki-style flourish. ' +
-        'User message:\n' + JSON.stringify(String(userText || '')) +
-        '\nRecent context:\n' + JSON.stringify(recent);
-
-      const stream = model.generateContentStream(prompt);
-      let text = '';
-      let sawChunk = false;
-      const deadline = Date.now() + 15000;
-      for await (const chunk of stream){
-        if(Date.now() > deadline) throw new Error('Doki chat persona timed out while streaming.');
-        const piece = chunk && typeof chunk.text === 'function' ? chunk.text() : '';
-        if(!piece) continue;
-        sawChunk = true;
-        text += piece;
-        const cleaned = sanitizeDokiChatReply(text);
-        if(streamUi && streamUi.bubble) {
-          streamUi.bubble.textContent = cleaned || 'Doki is thinking… 🦆';
-          scrollToBottom();
-        }
-      }
-      const cleaned = sanitizeDokiChatReply(text);
-      if(cleaned) return cleaned;
-      if(sawChunk) return sanitizeDokiChatReply(text);
-      return '';
-    } catch(error){
-      dokiChatGeminiLastError = error;
-      const detail = error && error.message ? error.message : String(error);
-      console.warn('Doki Duck AI: Gemini streaming response failed; using Doki local fallback. Reason: ' + detail, error);
-      return '';
-    }
-  }
-
-  async function generateDokiChatReply(userText, contextBefore, count, streamUi){
+  async function generateDokiChatReply(userText, contextBefore, count){
     const model = await initDokiChatGemini();
     if(!model) return buildLocalChatFallback(userText, count);
     const recent = (Array.isArray(contextBefore) ? contextBefore : []).slice(-2);
@@ -2005,17 +2008,45 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     scrollCwdToBottom();
   }
 
+  const CWD_LOADING_MESSAGES = [
+    'Duck is hatching your answer…',
+    'Doki is stirring the pond of knowledge…',
+    'The pond council is reviewing your question…',
+    'Doki is consulting absolutely nobody…',
+    'One moment. Doki is doing important duck business…',
+    'Calculating with approximately three brain cells…',
+    'Your answer is swimming this way…'
+  ];
+
   function createCwdStreamingRow(){
     const row = document.createElement('div');
-    row.className = 'row bot';
-    row.insertAdjacentHTML('beforeend', botAvatarHTML());
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble quack-reply';
-    bubble.textContent = 'Doki is thinking… 🦆';
-    row.appendChild(bubble);
+    row.className = 'cwd-gemini-loading';
+    const img = document.createElement('img');
+    img.src = 'doki-loading.webp';
+    img.alt = 'Doki is working';
+    const copy = document.createElement('div');
+    copy.className = 'cwd-gemini-loading-copy';
+    const msg = document.createElement('div');
+    msg.className = 'cwd-gemini-loading-message';
+    msg.textContent = CWD_LOADING_MESSAGES[0];
+    copy.appendChild(msg);
+    row.appendChild(img);
+    row.appendChild(copy);
     cwdMessagesEl.appendChild(row);
     scrollCwdToBottom();
-    return {row, bubble};
+    let i=0;
+    const timer=setInterval(function(){
+      if(!row.isConnected){ clearInterval(timer); return; }
+      i=(i+1)%CWD_LOADING_MESSAGES.length;
+      msg.textContent=CWD_LOADING_MESSAGES[i];
+    },1200);
+    return {row,bubble:msg,stop:function(flee){
+      clearInterval(timer);
+      if(flee){
+        row.classList.add('flee');
+        setTimeout(function(){if(row.parentNode)row.remove();},500);
+      }
+    }};
   }
 
   function validateFutureGeminiResult(result, originalText){
@@ -2085,92 +2116,107 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     return out;
   }
 
-  async function checkGrammarForStage3A(text, contextBefore){
-    if(!text || !text.trim()) return null;
-    try {
-      const activeLinter = window.dokiHarper && window.dokiHarper.linter;
-      if(!activeLinter){
-        dokiLastRoute='local';
-        dokiLastRouteReason='Harper unavailable; no cloud escalation in 3C-B1';
-        if(grammarStatusEl){
-          grammarStatusEl.className='grammar-status offline';
-          grammarStatusEl.textContent='⚠ Grammar engine unavailable · chat still works';
-        }
-        return null;
-      }
-
-      if(grammarStatusEl){
-        grammarStatusEl.className='grammar-status scan';
-        grammarStatusEl.textContent='Grammar scan…';
-      }
-      hideGrammarLearningPanel();
-
-      const ready = await dokiWithTimeout(
-        window.dokiHarperReady || Promise.resolve(activeLinter),
-        8000,
-        'Harper readiness'
-      ).catch(function(){ return null; });
-      if(!ready){
-        if(grammarStatusEl){
-          grammarStatusEl.className='grammar-status offline';
-          grammarStatusEl.textContent='⚠ Grammar engine unavailable · chat still works';
-        }
-        return null;
-      }
-
-      const lints = await dokiWithTimeout(activeLinter.lint(text), 8000, 'Harper grammar scan');
-      const safeLints = Array.isArray(lints) ? lints : [];
-      const route=getDokiEscalation(text, contextBefore || [], safeLints);
-      const properNounRisk=hasProperNounRisk(text,safeLints);
-
-      dokiLastRoute = route.route;
-      dokiLastRouteReason = route.reason + (properNounRisk ? '; possible proper noun/spelling ambiguity' : '');
-
-      window.dokiGrammarRouting={
-        route: (route.route === 'contextual' || properNounRisk) ? 'contextual' : 'local',
-        reason:dokiLastRouteReason,
-        context:contextBefore || [],
-        timestamp:Date.now()
-      };
-
-      // PASS 3C-B3: Gemini is a secondary verifier, never the primary checker.
-      const contextualEscalation = route.route === 'contextual';
-      const shouldEscalate = contextualEscalation || properNounRisk;
-      if(!shouldEscalate) return safeLints;
-
-      const verified=await runDokiGeminiVerifier(
-        text,
-        contextBefore || [],
-        safeLints,
-        dokiLastRouteReason
-      );
-
-      // Safe fallback: never expose unresolved Harper findings merely because the
-      // secondary verifier is unavailable. Proper-name spelling findings are also
-      // suppressed in the same path to prevent false corrections such as
-      // “Sagnik → Sank”.
-      const merged = mergeGeminiResultIntoLints(
-        text,
-        safeLints,
-        verified,
-        properNounRisk,
-        contextualEscalation
-      );
-      if(!verified || !verified.ok) merged.dokiReviewStatus='uncertain';
-      else if(verified.status==='uncertain') merged.dokiReviewStatus='uncertain';
-      else if(verified.status==='clean') merged.dokiReviewStatus='clean';
-      else merged.dokiReviewStatus='corrected';
-      return merged;
-    } catch (error) {
-      console.warn('Doki Duck AI: Grammar scan failed. Continuing without grammar feedback.', error);
-      if(grammarStatusEl){
-        grammarStatusEl.className='grammar-status offline';
-        grammarStatusEl.textContent = /timed out/i.test(String(error && error.message || ''))
-          ? '⚠ Grammar check timed out · chat still works'
-          : '⚠ Grammar engine unavailable · chat still works';
-      }
-      return null;
+  const GRAMMAR_LOADING_MESSAGES = [
+    'Doki is interrogating the verbs…',
+    'Ruffling the grammar feathers…',
+    'The pond council is double-checking this…',
+    'Doki is consulting absolutely nobody…'
+  ];
+  let grammarIndicatorTimer=null;
+  let grammarIndicatorRotator=null;
+  function startGrammarAsyncIndicator(){
+    if(!grammarAsyncIndicator)return;
+    if(grammarIndicatorTimer)clearTimeout(grammarIndicatorTimer);
+    if(grammarIndicatorRotator)clearInterval(grammarIndicatorRotator);
+    grammarIndicatorTimer=setTimeout(function(){
+      grammarAsyncIndicator.classList.add('visible');
+      grammarAsyncIndicator.setAttribute('aria-hidden','false');
+      let i=0;
+      grammarAsyncMessage.textContent=GRAMMAR_LOADING_MESSAGES[0];
+      grammarIndicatorRotator=setInterval(function(){
+        i=(i+1)%GRAMMAR_LOADING_MESSAGES.length;
+        grammarAsyncMessage.textContent=GRAMMAR_LOADING_MESSAGES[i];
+      },1000);
+    },240);
+  }
+  function stopGrammarAsyncIndicator(){
+    if(grammarIndicatorTimer)clearTimeout(grammarIndicatorTimer);
+    if(grammarIndicatorRotator)clearInterval(grammarIndicatorRotator);
+    grammarIndicatorTimer=null;
+    grammarIndicatorRotator=null;
+    if(grammarAsyncIndicator){
+      grammarAsyncIndicator.classList.remove('visible');
+      grammarAsyncIndicator.setAttribute('aria-hidden','true');
     }
+  }
+
+  async function checkGrammarForStage3A(text, contextBefore){
+    if(!text || !text.trim()) return [];
+    const scanTokenAtStart=grammarScanToken;
+    const fallbackNow=buildDokiFallbackLints(text, []);
+    if(grammarStatusEl){grammarStatusEl.className='grammar-status';grammarStatusEl.textContent='';}
+    hideGrammarLearningPanel();
+
+    async function refineWithHarper(linter){
+      if(!linter || scanTokenAtStart!==grammarScanToken)return;
+      const context=contextBefore||[];
+      try{
+        if(!fallbackNow.length)startGrammarAsyncIndicator();
+        const lints=await dokiWithTimeout(linter.lint(text),3000,'Harper grammar scan');
+        if(scanTokenAtStart!==grammarScanToken)return;
+        const safeLints=Array.isArray(lints)?lints:[];
+        const route=getDokiEscalation(text,context,safeLints);
+        const properNounRisk=hasProperNounRisk(text,safeLints);
+        dokiLastRoute=route.route;
+        dokiLastRouteReason=route.reason+(properNounRisk?'; possible proper noun/spelling ambiguity':'');
+        window.dokiGrammarRouting={route:(route.route==='contextual'||properNounRisk)?'contextual':'local',reason:dokiLastRouteReason,context:context,timestamp:Date.now()};
+        const contextualEscalation=route.route==='contextual';
+        const shouldEscalate=contextualEscalation||properNounRisk;
+
+        if(!shouldEscalate){
+          stopGrammarAsyncIndicator();
+          showGrammarStage3BResult(safeLints,text,scanTokenAtStart);
+          return;
+        }
+
+        const hasSafeLocal=safeLints.some(function(l){return !!suggestionOfLint(l);})||fallbackNow.length>0;
+        if(hasSafeLocal && !properNounRisk){
+          stopGrammarAsyncIndicator();
+          showGrammarStage3BResult(safeLints.length?safeLints:fallbackNow,text,scanTokenAtStart);
+        }else{
+          startGrammarAsyncIndicator();
+        }
+
+        const verified=await runDokiGeminiVerifier(text,context,safeLints,dokiLastRouteReason);
+        if(scanTokenAtStart!==grammarScanToken)return;
+        const merged=mergeGeminiResultIntoLints(text,safeLints,verified,properNounRisk,contextualEscalation);
+        if(!verified||!verified.ok)merged.dokiReviewStatus='uncertain';
+        else if(verified.status==='uncertain')merged.dokiReviewStatus='uncertain';
+        else if(verified.status==='clean')merged.dokiReviewStatus='clean';
+        else merged.dokiReviewStatus='corrected';
+        stopGrammarAsyncIndicator();
+        showGrammarStage3BResult(merged,text,scanTokenAtStart);
+      }catch(error){
+        stopGrammarAsyncIndicator();
+        if(scanTokenAtStart!==grammarScanToken)return;
+        // Fast local fallback remains the visible safe path on any Harper/Gemini delay.
+        showGrammarStage3BResult(fallbackNow,text,scanTokenAtStart);
+      }
+    }
+
+    // Never hold the user's send path on Harper readiness. If the worker is ready,
+    // refine immediately in the background; if it is still warming, attach once and
+    // refine when ready. The caller receives the local fallback immediately.
+    if(window.dokiHarper && window.dokiHarper.linter){
+      if(window.dokiHarper.ready){
+        void refineWithHarper(window.dokiHarper.linter);
+      }else if(window.dokiHarperReady && typeof window.dokiHarperReady.then==='function'){
+        void window.dokiHarperReady.then(function(linter){ return refineWithHarper(linter); }).catch(function(){
+          if(scanTokenAtStart===grammarScanToken)showGrammarStage3BResult(fallbackNow,text,scanTokenAtStart);
+        });
+      }
+    }
+    return fallbackNow;
   }
 
   function safeLintMessage(lint){
@@ -2631,7 +2677,8 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     // clears the meter when the field becomes empty; doing it in the opposite
     // order was silently erasing the grammar result in the previous build.
     inputEl.value = '';
-    meterEl.innerHTML = '<span class="grammar-scan-status">Grammar scan…</span>';
+    meterEl.innerHTML = '&nbsp;';
+    stopGrammarAsyncIndicator();
 
     // Pass 3B adds local correction/explanation/learning UI. Pond Points are still not awarded here; that belongs to Pass 3C.
     const thisGrammarScan=++grammarScanToken;
@@ -2694,12 +2741,14 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     const thisToken = ++cwdResponseToken;
     const streamUi = createCwdStreamingRow();
     try {
-      const reply = await generateDokiChatReply(raw, contextBefore, count, streamUi);
+      const reply = await generateDokiChatReply(raw, contextBefore, count);
       if(thisToken !== cwdResponseToken){
-        if(streamUi && streamUi.row && streamUi.row.parentNode) streamUi.row.remove();
-      } else if(streamUi && streamUi.bubble){
-        streamUi.bubble.textContent = reply || buildLocalChatFallback(raw, count);
-        scrollCwdToBottom();
+        if(streamUi && streamUi.stop) streamUi.stop(true);
+        else if(streamUi && streamUi.row && streamUi.row.parentNode) streamUi.row.remove();
+      } else {
+        const finalText=reply || buildLocalChatFallback(raw,count);
+        if(streamUi && streamUi.stop) streamUi.stop(true);
+        addCwdRow(finalText,'bot');
       }
     } finally {
       cwdSendInFlight = false;
@@ -2730,6 +2779,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
 
   function setIncognito(on){
     incognito = on;
+    stopGrammarAsyncIndicator();
     hideGrammarLearningPanel();
     grammarScanToken++;
     clearDokiContext();
@@ -2805,6 +2855,7 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     if(dokiRoute === 'chat'){
       scrollToBottom();
       if(inputEl) inputEl.focus();
+      maybeShowFirstGeminiCheck();
     } else if(dokiRoute === 'chatWithDoki'){
       renderCwdLimitStatus();
       scrollCwdToBottom();
@@ -2858,7 +2909,53 @@ import { binaryInlined } from 'https://unpkg.com/harper.js@2.4.0/dist/binaryInli
     }
   });
 
+  const FIRST_GEMINI_CHECK_KEY='dokiDuckAI.firstGeminiCheck.v1';
+  let firstGeminiCheckBusy=false;
+  function hasCompletedFirstGeminiCheck(){try{return localStorage.getItem(FIRST_GEMINI_CHECK_KEY)==='passed';}catch(e){return false;}}
+  function markFirstGeminiCheckPassed(){try{localStorage.setItem(FIRST_GEMINI_CHECK_KEY,'passed');}catch(e){}}
+  async function startFirstGeminiCheck(){
+    if(!dokiGeminiFirstCheck||firstGeminiCheckBusy||hasCompletedFirstGeminiCheck())return;
+    firstGeminiCheckBusy=true;
+    dokiGeminiFirstCheck.classList.add('checking');
+    dokiGeminiFirstCheck.classList.remove('failed');
+    dokiGeminiFirstImage.src='doki-loading.webp';
+    dokiGeminiFirstTitle.textContent='🦆 Doki is checking Gemini…';
+    dokiGeminiFirstNote.textContent='The hidden test is running now. Normal Chat stays available.';
+    try{
+      const result=await runGeminiDirectDiagnostic();
+      if(result&&result.ok){
+        markFirstGeminiCheckPassed();
+        dokiGeminiFirstTitle.textContent='✅ Gemini is ready. Doki approves.';
+        dokiGeminiFirstNote.textContent='The pond connection passed. This check will not appear again on this device.';
+        setTimeout(function(){dokiGeminiFirstCheck.classList.add('success');setTimeout(function(){if(dokiGeminiFirstCheck)dokiGeminiFirstCheck.classList.remove('visible');},220);},450);
+      }else{
+        dokiGeminiFirstCheck.classList.remove('checking');
+        dokiGeminiFirstCheck.classList.add('failed');
+        dokiGeminiFirstImage.src='doki-standing.png';
+        dokiGeminiFirstTitle.textContent='😑 Gemini did not quack back.';
+        dokiGeminiFirstNote.textContent='Tap Doki to retry the hidden connection test. Normal Chat stays available.';
+        firstGeminiCheckBusy=false;
+      }
+    }catch(error){
+      dokiGeminiFirstCheck.classList.remove('checking');
+      dokiGeminiFirstCheck.classList.add('failed');
+        dokiGeminiFirstImage.src='doki-standing.png';
+      dokiGeminiFirstTitle.textContent='😑 The pond check needs another try.';
+      dokiGeminiFirstNote.textContent='Tap Doki to retry. Normal Chat stays available.';
+      firstGeminiCheckBusy=false;
+    }
+  }
+  function maybeShowFirstGeminiCheck(){
+    if(!dokiGeminiFirstCheck||!player.acceptedTerms||hasCompletedFirstGeminiCheck())return;
+    dokiGeminiFirstCheck.classList.add('visible');
+  }
+  if(dokiGeminiFirstCheck){
+    dokiGeminiFirstCheck.addEventListener('click',startFirstGeminiCheck);
+    dokiGeminiFirstCheck.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();startFirstGeminiCheck();}});
+  }
+
   showDokiRoute('chat');
+  maybeShowFirstGeminiCheck();
 
 })();
 </script>
